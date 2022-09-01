@@ -42,3 +42,52 @@
 // 写入多少数据，以及数据源在内存中的什么位置，这些信息包含在Host向SSD发送的Write命令中。
 // 每笔用户数据对应着一个叫做LBA（Logical Block Address）的东西，Write命令通过指定LBA来告诉SSD写入的是什么数据。
 // 对NVMe/PCIe来说，SSD收到Write命令后，通过PCIe去Host的内存数据所在位置读取数据，然后把这些数据写入到闪存中，同时得到LBA与闪存位置的映射关系。
+
+
+
+
+// Doorbellregister
+// SQ位于Host内存中，Host要发送命令时，先把准备好的命令放在SQ中，然后通知SSD来取；
+// CQ也是位于Host内存中，一个命令执行完成，成功或失败，SSD总会往CQ中写入命令完成状态。
+// DB又是干什么用的呢？Host发送命令时，不是直接往SSD中发送命令的，而是把命令准备好放在自己的内存中，
+// 那怎么通知SSD来获取命令执行呢？
+// Host就是通过写SSD端的DB寄存器来告知SSD的
+
+// SQ = Submission Queue
+// CQ = Completion Queue
+// DB = Doorbell Register
+
+// 第一步：Host写命令到SQ；
+
+// 第二步：Host写DB，通知SSD取指；
+
+// 第三步：SSD收到通知，于是从SQ中取指；
+
+// 第四步：SSD执行指令；
+
+// 第五步：指令执行完成，SSD往CQ中写指令执行结果；
+
+// 第六步：然后SSD发起中断通知Host指令完成；
+
+// 第七步：收到中断，Host处理CQ，查看指令完成状态；
+
+// 第八步：Host处理完CQ中的指令执行结果，通过DB回复SSD：指令执行结果已处理，辛苦您了！
+
+
+
+// host往sq1中写入3个命令, sq1.tail=3, qs DBR = 3, 
+
+// 执行完2个命令, cq DBR=2
+
+
+// db记录了sq 和 cq 的头和尾
+
+// ssd 控制器知道sq的head位置
+
+// host知道sq的tail位置
+
+// SSD往CQ中写入命令状态信息的同时，还把SQ Head DB的信息告知了Host
+
+// cq host 知道head 不知道tail
+// 一开始cq中每条命令完成条目中的 p bit初始化为0, ssd在往cq中写入命令完成条目是p bit置为1, host在处理cq中的命令完成条目时, p bit置为0,
+// cq是在host的内存中, hist记住上次的tail, 检查p 得出新的tail
