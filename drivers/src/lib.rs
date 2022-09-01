@@ -31,6 +31,7 @@ pub mod prelude;
 pub mod scheme;
 pub mod uart;
 pub mod utils;
+pub mod nvme;
 
 /// The error type for external device.
 #[derive(Debug)]
