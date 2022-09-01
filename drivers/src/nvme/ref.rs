@@ -31,10 +31,15 @@
 
 
 
+// Device-to-device memory-transfer offload with P2PDMA
+// https://lwn.net/Articles/767281/
+// PCI devices expose memory to the host system in form of memory regions defined by base address registers (BARs). 
+// Those are regions mapped into the host's physical memory space. 
+// All regions are mapped into the same address space, and PCI DMA operations can use those addresses directly.
+// It is thus possible for a driver to configure a PCI DMA operation to perform transfers between the memory zones of two devices while bypassing system memory completely. 
 
-
-
-
+// linux地址空间  pcie dma
+// https://www.oreilly.com/library/view/linux-device-drivers/0596005903/ch15.html
 
 
 

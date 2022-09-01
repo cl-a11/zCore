@@ -1,4 +1,5 @@
 use alloc::string::String;
+use alloc::vec::Vec;
 use core::mem::size_of;
 
 
@@ -144,8 +145,26 @@ impl BlockScheme for NvmeInterface {
 
 
 impl NvmeInterface {
-    pub fn nvme_submit_sync_cmd(&self, cmd:NvmeRWCommand) -> DeviceResult {
+    pub fn nvme_submit_sync_cmd(&self, cmd:NvmeCommand) -> DeviceResult {
 
+        match NvmeCommand{
+            NvmeCommand::NvmeCreateCq => {
+
+            }
+
+            NvmeCommand::NvmeCreateSq => {
+
+            }
+
+            NvmeCommand::NvmeRWCommand => {
+
+            }
+            
+            _ => {
+                info!("wrong command");
+            }
+            
+        }
         let mut io_queue = &mut self.dev.io_queues[0];
 
         // copy a command into a queue and ring the doorbell
@@ -169,7 +188,7 @@ impl NvmeInterface {
         Some(0)
     }
 
-    pub fn nvme_submit_cmd(&self, nvmeq: &mut NvmeQueue, cmd:NvmeRWCommand){
+    pub fn nvme_submit_cmd(&self, nvmeq: &mut NvmeQueue, cmd:NvmeCommand){
 
 
         let cmdsize = size_of::<NvmeRWCommand>();
@@ -186,23 +205,118 @@ impl NvmeInterface {
 
 
 
+// /*
+//  * Returns 0 on success.  If the result is negative, it's a Linux error code;
+//  * if the result is positive, it's an NVM Express status code
+//  */
+// int __nvme_submit_sync_cmd(struct request_queue *q, struct nvme_command *cmd,
+// 		union nvme_result *result, void *buffer, unsigned bufflen,
+// 		unsigned timeout, int qid, int at_head,
+// 		blk_mq_req_flags_t flags)
+// {
+// 	struct request *req;
+// 	int ret;
+
+// 	if (qid == NVME_QID_ANY)
+// 		req = blk_mq_alloc_request(q, nvme_req_op(cmd), flags);
+// 	else
+// 		req = blk_mq_alloc_request_hctx(q, nvme_req_op(cmd), flags,
+// 						qid ? qid - 1 : 0);
+
+// 	if (IS_ERR(req))
+// 		return PTR_ERR(req);
+// 	nvme_init_request(req, cmd);
+
+// 	if (timeout)
+// 		req->timeout = timeout;
+
+// 	if (buffer && bufflen) {
+// 		ret = blk_rq_map_kern(q, req, buffer, bufflen, GFP_KERNEL);
+// 		if (ret)
+// 			goto out;
+// 	}
+
+// 	req->rq_flags |= RQF_QUIET;
+// 	ret = nvme_execute_rq(req, at_head);
+// 	if (result && ret >= 0)
+// 		*result = nvme_req(req)->result;
+//  out:
+// 	blk_mq_free_request(req);
+// 	return ret;
+// }
 
 
 
 
 
+enum NvmeCommand {
+    NvmeRWCommand,
+	NvmeCreateCq,
+	NvmeCreateSq,
+}
 
 
+pub struct NvmeCreateCq{
+    pub opcode: u8,
+    pub flags: u8,
+    pub command_id: u16,
+    pub rsvd1: Vec<u32>,
+    pub prp1: u64,
+    pub rsvd8: u64,
+    pub sqid: u16,
+    pub qsize: u16,
+    pub cq_flags: u16,
+    pub irq_vector: u16,
+    pub rsvd12: Vec<u32>,
+}
 
-
-
-
-
-
-
-
-
-
+impl NvmeCreateCq{
+    pub fn new_create_cq_command() -> Self{
+        NvmeCreateCq{
+            opcode: 0x04,
+            flags: 0,
+            command_id: 0,
+            rsvd1: alloc::vec![0 as u32; 5],
+            prp1: 0,
+            rsvd8: 0,
+            sqid: 0,
+            qsize: 0,
+            cq_flags: 0,
+            irq_vector: 0,
+            rsvd12: alloc::vec![0 as u32; 4],
+        }
+    }
+}
+pub struct NvmeCreateSq{
+    pub opcode: u8,
+    pub flags: u8,
+    pub command_id: u16,
+    pub rsvd1: Vec<u32>,
+    pub prp1: u64,
+    pub rsvd8: u64,
+    pub sqid: u16,
+    pub qsize: u16,
+    pub sq_flags: u16,
+    pub cqid: u16,
+    pub rsvd12: Vec<u32>,
+}
+impl NvmeCreateSq{
+    pub fn new_create_sq_command() -> Self{
+        NvmeCreateSq{
+            opcode: 0x05,
+            flags: 0,
+            command_id: 0,
+            rsvd1: alloc::vec![0 as u32; 5],
+            prp1: 0,
+            rsvd8: 0,
+            sqid: 0,
+            qsize: 0,
+            sq_flags: 0,
+            cqid: 0,
+            rsvd12: alloc::vec![0 as u32; 4],
+        }
+    }
+}
 
 
 
@@ -290,3 +404,8 @@ impl NvmeRWCommand{
 // 	.read	= nvme_blk_read,
 // 	.write	= nvme_blk_write,
 // };
+
+
+
+
+hdiutil convert -format UDRW -o /Users/Downloads/ubuntu-18.04.6-desktop-amd64 /Users/Downloads/ubuntu-18.04.6-desktop-amd64.iso
