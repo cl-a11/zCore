@@ -21,6 +21,12 @@ pub struct NvmeDev{
     // bar0~bar5, 目前只用bar0
     //base address register  pcie controller 向os提供的一组寄存器用于访问设备内部的空间(接收控制信息)
     pub bar: usize,
+
+    // pub cap: usize,
+
+    // pub dbs: usize,
+
+    
 }
 
 

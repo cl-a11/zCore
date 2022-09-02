@@ -116,57 +116,34 @@ cq是在host的内存中, hist记住上次的tail, 检查p 得出新的tail
 # nvme设备初始化
 
 参考 <https://blog.csdn.net/yiyeguzhou100/article/details/105478124>
+## 1. 创建admin queue
 
+linux 5.19
 
 ```c
 static int nvme_pci_configure_admin_queue(struct nvme_dev *dev)
+
+```
+
+
+u-boot
+
+```c
+static int nvme_configure_admin_queue(struct nvme_dev *dev)
 {
-	int result;
-	u32 aqa;
-	struct nvme_queue *nvmeq;
-
-	result = nvme_remap_bar(dev, db_bar_size(dev, 0));
-	if (result < 0)
-		return result;
-
-	dev->subsystem = readl(dev->bar + NVME_REG_VS) >= NVME_VS(1, 1, 0) ?
-				NVME_CAP_NSSRC(dev->ctrl.cap) : 0;
-
-	if (dev->subsystem &&
-	    (readl(dev->bar + NVME_REG_CSTS) & NVME_CSTS_NSSRO))
-		writel(NVME_CSTS_NSSRO, dev->bar + NVME_REG_CSTS);
-
-	result = nvme_disable_ctrl(&dev->ctrl);
-	if (result < 0)
-		return result;
-
-	result = nvme_alloc_queue(dev, 0, NVME_AQ_DEPTH);
-	if (result)
-		return result;
-
-	dev->ctrl.numa_node = dev_to_node(dev->dev);
-
-	nvmeq = &dev->queues[0];
-	aqa = nvmeq->q_depth - 1;
-	aqa |= aqa << 16;
-
-	writel(aqa, dev->bar + NVME_REG_AQA);
-	lo_hi_writeq(nvmeq->sq_dma_addr, dev->bar + NVME_REG_ASQ);
-	lo_hi_writeq(nvmeq->cq_dma_addr, dev->bar + NVME_REG_ACQ);
-
-	result = nvme_enable_ctrl(&dev->ctrl);
-	if (result)
-		return result;
-
-	nvmeq->cq_vector = 0;
-	nvme_init_queue(nvmeq, 0);
-	result = queue_request_irq(nvmeq);
-	if (result) {
-		dev->online_queues--;
-		return result;
-	}
-
-	set_bit(NVMEQ_ENABLED, &nvmeq->flags);
-	return result;
 }
+
+struct nvme_bar {
+	__u64 cap;	/* Controller Capabilities */
+	__u32 vs;	/* Version */
+	__u32 intms;	/* Interrupt Mask Set */
+	__u32 intmc;	/* Interrupt Mask Clear */
+	__u32 cc;	/* Controller Configuration */
+	__u32 rsvd1;	/* Reserved */
+	__u32 csts;	/* Controller Status */
+	__u32 rsvd2;	/* Reserved */
+	__u32 aqa;	/* Admin Queue Attributes */
+	__u64 asq;	/* Admin SQ Base Address */
+	__u64 acq;	/* Admin CQ Base Address */
+};
 ```

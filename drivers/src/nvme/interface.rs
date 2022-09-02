@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::mem::size_of;
-
+use core::ptr::read_volatile;
 
 use crate::scheme::{BlockScheme, Scheme};
 use crate::{DeviceResult};
@@ -23,9 +23,9 @@ pub struct NvmeInterface {
 
 impl NvmeInterface{
 
-    pub fn new(irq: usize, bar_va:usize) -> DeviceResult<NvmeInterface>{
+    pub fn new(irq: usize, bar:usize) -> DeviceResult<NvmeInterface>{
 
-        let dev = NvmeDev::new(bar_va);
+        let dev = NvmeDev::new(bar);
         let driver = NvmeDriver::new();
 
 
@@ -36,7 +36,7 @@ impl NvmeInterface{
             irq,
         };
 
-        interface.init(bar_va)?;
+        interface.init(bar)?;
 
         Ok(interface)
 
@@ -50,7 +50,7 @@ impl NvmeInterface{
     // 第五，添加nvme Controller设备，即/dev/nvme#，提供ioctl接口。这样userspace就可以通过ioctl系统调用发送nvme admin command。
 
     // 参考 linux 5.19  nvme_reset_work    nvme_pci_configure_admin_queue
-    pub fn init(&mut self, bar_va: usize) -> DeviceResult {
+    pub fn init(&mut self, bar: usize) -> DeviceResult {
         
         //第一步在pci扫描到设备时已经完成
 
@@ -60,27 +60,33 @@ impl NvmeInterface{
         //admin queue +io queue
         let num_queues = 2;
 
-        /*
-        #define NVME_CAP_STRIDE(cap)	(((cap) >> 32) & 0xf)
-        1 << NVME_CAP_STRIDE(dev->ctrl.cap);
-        dev->ctrl.cap = lo_hi_readq(dev->bar + NVME_REG_CAP);
+        let dev_cap_addr = (bar as u64 + NvmeRegister::NvmeRegCap as u64)   as *const u64;
+
+        let dev_cap = unsafe { read_volatile(dev_cap_addr) };
+
+
+        let db_stride = 1 << (dev_cap >> 32 & 0xfff);
+
+        let dev_dbs = bar + 4096;
+
+
+    
+        let cap = dev_cap;
+
+
+        //分配一个nvme queue，包括其需要的CQ和SQ空间和DMA地址,注意这里第一个io queue使用的entry是0,也就是和admin queue共用
+        self.nvme_alloc_queue(0, 32);
+
+
+        // /*
+        // #define NVME_CAP_STRIDE(cap)	(((cap) >> 32) & 0xf)
+        // 1 << NVME_CAP_STRIDE(dev->ctrl.cap);
+        // dev->ctrl.cap = lo_hi_readq(dev->bar + NVME_REG_CAP);
+        // cap = (dev->bar >> 32) & 0xf;
+        // */
+        // let db_bar_size = NvmeRegister::NvmeRegDbs as usize + (num_queues * 8 * db_stride);
+
         
-
-        cap = (dev->bar >> 32) & 0xf;
-        */
-        let db_bar_size = NvmeRegister::NvmeRegDbs as usize + (num_queues * 8 * db_stride);
-
-        
-
-
-        // let c = 
-
-
-
-
-
-
-
         Ok(())
     }
 }
@@ -137,22 +143,23 @@ impl BlockScheme for NvmeInterface {
     fn read_block(&self, block_id: usize, buf: &mut [u8]) -> DeviceResult {
 
         assert_eq!(buf.len(), 512);
-        //一次只读一块
-        //512B
+
+        //一次只读一块 512B
         let total_len = 512;
         let blkcnt = 1;
         let c = NvmeRWCommand::new_read_command();
 
-        //每个NVMe命令中有两个域：PRP1和PRP2，Host就是通过这两个域告诉SSD数据在内存中的位置或者数据需要写入的地址
+        /* 
+        每个NVMe命令中有两个域：PRP1和PRP2，Host就是通过这两个域告诉SSD数据在内存中的位置或者数据需要写入的地址
+        首先对prp1进行读写，如果数据还没完，就看数据量是不是在一个page内，在的话，只需要读写prp2内存地址就可以了，数据量大于1个page，就需要读出prp list
 
-        // 首先对prp1进行读写，如果数据还没完，就看数据量是不是在一个page内，在的话，只需要读写prp2内存地址就可以了，数据量大于1个page，就需要读出prp list
+        由于只读一块, 小于一页, 所以只需要prp1
+        prp1 = dma_addr 
+        prp2 = 0
 
-        // 由于只读一块, 小于一页, 所以只需要prp1
-        // prp1=dma_addr 
-        // prp2=0
-
-        //uboot中对应实现 nvme_setup_prps
-        //linux中对应实现 nvme_pci_setup_prps
+        uboot中对应实现 nvme_setup_prps
+        linux中对应实现 nvme_pci_setup_prps
+        */
         let dma_addr = 0;
         let prp1 = dma_addr;
 
@@ -166,22 +173,23 @@ impl BlockScheme for NvmeInterface {
 
 
         assert_eq!(buf.len(), 512);
-        //一次只读一块
-        //512B
+
+        //一次只读一块 512B
         let total_len = 512;
         let blkcnt = 1;
         let mut c = NvmeCommand::NvmeRWCommand;
 
-        //每个NVMe命令中有两个域：PRP1和PRP2，Host就是通过这两个域告诉SSD数据在内存中的位置或者数据需要写入的地址
+        /* 
+        每个NVMe命令中有两个域：PRP1和PRP2，Host就是通过这两个域告诉SSD数据在内存中的位置或者数据需要写入的地址
+        首先对prp1进行读写，如果数据还没完，就看数据量是不是在一个page内，在的话，只需要读写prp2内存地址就可以了，数据量大于1个page，就需要读出prp list
 
-        // 首先对prp1进行读写，如果数据还没完，就看数据量是不是在一个page内，在的话，只需要读写prp2内存地址就可以了，数据量大于1个page，就需要读出prp list
+        由于只读一块, 小于一页, 所以只需要prp1
+        prp1 = dma_addr 
+        prp2 = 0
 
-        // 由于只读一块, 小于一页, 所以只需要prp1
-        // prp1 = dma_addr 
-        // prp2 = 0
-
-        //uboot中对应实现 nvme_setup_prps
-        //linux中对应实现 nvme_pci_setup_prps
+        uboot中对应实现 nvme_setup_prps
+        linux中对应实现 nvme_pci_setup_prps
+        */
         let dma_addr = 0;
         let prp1 = dma_addr;
         let prp2 : u64 = 0;
@@ -189,10 +197,10 @@ impl BlockScheme for NvmeInterface {
         let src_ptr = buf.as_ptr() as u64;
         
         //riscv是小端模式, 故这里不做转换
-        c.slba = block_id as u64;
-        c.length = 1;
-        c.prp1 = src_ptr;
-        c.prp2 = prp2;
+        // c.slba = block_id as u64;
+        // c.length = 1;
+        // c.prp1 = src_ptr;
+        // c.prp2 = prp2;
 
         self.nvme_submit_sync_cmd(c);
 
@@ -444,3 +452,38 @@ pub enum NvmeRegister{
 					 */
 	NvmeRegDbs	= 0x1000,	/* SQ 0 Tail Doorbell */
 }
+
+
+
+//NvmeRegister
+pub const NVME_REG_CAP:usize	= 0x0000;	/* Controller Capabilities */
+pub const NVME_REG_VS:usize	    = 0x0008;	/* Version */
+pub const NVME_REG_INTMS:usize	= 0x000c;	/* Interrupt Mask Set */
+pub const NVME_REG_INTMC:usize	= 0x0010;	/* Interrupt Mask Clear */
+pub const NVME_REG_CC:usize	    = 0x0014;	/* Controller Configuration */
+pub const NVME_REG_CSTS:usize	= 0x001c;	/* Controller Status */
+pub const NVME_REG_NSSR:usize	= 0x0020;	/* NVM Subsystem Reset */
+pub const NVME_REG_AQA:usize    = 0x0024;	/* Admin Queue Attributes */
+pub const NVME_REG_ASQ:usize    = 0x0028;	/* Admin SQ Base Address */
+pub const NVME_REG_ACQ:usize    = 0x0030;	/* Admin CQ Base Address */
+pub const NVME_REG_CMBLOC:usize	= 0x0038;	/* Controller Memory Buffer Location */
+pub const NVME_REG_CMBSZ:usize	= 0x003c;	/* Controller Memory Buffer Size */
+pub const NVME_REG_BPINFO:usize	= 0x0040;	/* Boot Partition Information */
+pub const NVME_REG_BPRSEL:usize	= 0x0044;	/* Boot Partition Read Select */
+pub const NVME_REG_BPMBL:usize	= 0x0048;	/* Boot Partition Memory Buffer
+         				 * Location
+         				 */
+pub const NVME_REG_CMBMSC:usize = 0x0050;	/* Controller Memory Buffer Memory
+         				 * Space Control
+         				 */
+pub const NVME_REG_CRTO:usize	= 0x0068;	/* Controller Ready Timeouts */
+pub const NVME_REG_PMRCAP:usize	= 0x0e00;	/* Persistent Memory Capabilities */
+pub const NVME_REG_PMRCTL:usize	= 0x0e04;	/* Persistent Memory Region Control */
+pub const NVME_REG_PMRSTS:usize	= 0x0e08;	/* Persistent Memory Region Status */
+pub const NVME_REG_PMREBS:usize	= 0x0e0c;	/* Persistent Memory Region Elasticity
+         				 * Buffer Size
+         				 */
+pub const NVME_REG_PMRSWTP:usize = 0x0e10;	/* Persistent Memory Region Sustained
+         				 * Write Throughput
+         				 */
+pub const NVME_REG_DBS:usize	= 0x1000;	/* SQ 0 Tail Doorbell */
