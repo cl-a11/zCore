@@ -3,17 +3,11 @@ use alloc::collections::{VecDeque};
 
 
 
-// pub struct RawQueue{
-
-// }
-
-
-
-use super::NvmeRWCommand;
+use super::NvmeCommand;
 
 pub struct NvmeQueue{
-    pub sq: VecDeque<NvmeRWCommand>,
-    pub cq: VecDeque<NvmeRWCommand>,
+    pub sq: VecDeque<NvmeCommand>,
+    pub cq: VecDeque<NvmeCommand>,
 }
 
 
@@ -32,7 +26,7 @@ impl NvmeQueue{
         }
     }
 
-    pub fn sq_push(&mut self, cmd: NvmeRWCommand){
+    pub fn sq_push(&mut self, cmd: NvmeCommand){
         self.sq.push_front(cmd);
     }
 }

@@ -192,6 +192,31 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 return Ok(dev);
             }
         }
+        (0x144d, 0xa801) => {
+            if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
+                info!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
+                #[cfg(target_arch = "riscv64")]
+                let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
+
+                if let Some(m) = mapper {
+                    m.query_or_map(addr as usize, PAGE_SIZE * 8);
+                }
+
+                let irq = unsafe { enable(dev.loc, addr) };
+                let vaddr = phys_to_virt(addr as usize);
+
+                
+                let dev = Device::Block(
+                    crate::nvme::NvmeInterface::new(
+                        irq.unwrap_or(0),
+                        vaddr,
+                    )
+                );
+
+                return Ok(dev);
+            }
+            
+        }
         (0x8086, 0x10fb) => {
             // 82599ES 10-Gigabit SFI/SFP+ Network Connection
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
@@ -223,31 +248,6 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 );
                 return Err(DeviceError::NotSupported);
             }
-        }
-        (0x144d, 0xa801) => {
-            if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
-                info!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
-                #[cfg(target_arch = "riscv64")]
-                let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
-
-                if let Some(m) = mapper {
-                    m.query_or_map(addr as usize, PAGE_SIZE * 8);
-                }
-
-                let irq = unsafe { enable(dev.loc, addr) };
-                let vaddr = phys_to_virt(addr as usize);
-
-                
-                let dev = Device::Block(crate::nvme::NvmeInterface::new(
-                    name,
-                    irq.unwrap_or(0),
-                    vaddr,
-                    len as usize,
-                    0,
-                )?);
-                return Ok(dev);
-            }
-            
         }
         _ => {}
     }

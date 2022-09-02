@@ -6,9 +6,9 @@ use core::mem::size_of;
 use crate::scheme::{BlockScheme, Scheme};
 use crate::{DeviceResult};
 
-use super::dev::NvmeDev;
-use super::driver::NvmeDriver;
-use super::queue::NvmeQueue;
+use super::dev::*;
+use super::driver::*;
+use super::queue::*;
 
 
 pub struct NvmeInterface {
@@ -20,6 +20,76 @@ pub struct NvmeInterface {
 
     irq: usize,
 }
+
+impl NvmeInterface{
+
+    pub fn new(irq: usize, bar_va:usize) -> DeviceResult<NvmeInterface>{
+
+        let dev = NvmeDev::new(bar_va);
+        let driver = NvmeDriver::new();
+
+
+        let mut interface = NvmeInterface{
+            name: String::from("nvme"),
+            dev,
+            driver,
+            irq,
+        };
+
+        interface.init(bar_va)?;
+
+        Ok(interface)
+
+    }
+
+
+    // 第一，设置映射设备的bar空间到内核的虚拟地址空间当中，通过调用ioremap函数，将Controller的nvme寄存器映射到内核后，可以通过writel, readl这类函数直接读写寄存器。
+    // 第二, 完成 DMA mask设置、pci总线中断分配、读取并配置 queue depth、stride 等参数
+    // 第三，设置admin queue，admin queue设置之后，才能发送nvme admin Command。
+    // 第四，添加nvme namespace设备，即/dev/nvme#n#，这样就可以对设备进行读写操作了。
+    // 第五，添加nvme Controller设备，即/dev/nvme#，提供ioctl接口。这样userspace就可以通过ioctl系统调用发送nvme admin command。
+
+    // 参考 linux 5.19  nvme_reset_work    nvme_pci_configure_admin_queue
+    pub fn init(&mut self, bar_va: usize) -> DeviceResult {
+        
+        //第一步在pci扫描到设备时已经完成
+
+        //第二步 设置admin queue
+        self.nvme_alloc_queue(0, 32);
+
+        //admin queue +io queue
+        let num_queues = 2;
+
+        /*
+        #define NVME_CAP_STRIDE(cap)	(((cap) >> 32) & 0xf)
+        1 << NVME_CAP_STRIDE(dev->ctrl.cap);
+        dev->ctrl.cap = lo_hi_readq(dev->bar + NVME_REG_CAP);
+        
+
+        cap = (dev->bar >> 32) & 0xf;
+        */
+        let db_bar_size = NvmeRegister::NvmeRegDbs as usize + (num_queues * 8 * db_stride);
+
+        
+
+
+        // let c = 
+
+
+
+
+
+
+
+        Ok(())
+    }
+}
+
+
+
+
+
+
 
 
 
@@ -89,8 +159,6 @@ impl BlockScheme for NvmeInterface {
         let prp2 : u64 = 0;
 
 
-
-        // self.driver.0.lock().read_block(block_id, buf)?;
         Ok(())
     }
 
@@ -102,15 +170,15 @@ impl BlockScheme for NvmeInterface {
         //512B
         let total_len = 512;
         let blkcnt = 1;
-        let mut c = NvmeRWCommand::new_write_command();
+        let mut c = NvmeCommand::NvmeRWCommand;
 
         //每个NVMe命令中有两个域：PRP1和PRP2，Host就是通过这两个域告诉SSD数据在内存中的位置或者数据需要写入的地址
 
         // 首先对prp1进行读写，如果数据还没完，就看数据量是不是在一个page内，在的话，只需要读写prp2内存地址就可以了，数据量大于1个page，就需要读出prp list
 
         // 由于只读一块, 小于一页, 所以只需要prp1
-        // prp1=dma_addr 
-        // prp2=0
+        // prp1 = dma_addr 
+        // prp2 = 0
 
         //uboot中对应实现 nvme_setup_prps
         //linux中对应实现 nvme_pci_setup_prps
@@ -130,10 +198,6 @@ impl BlockScheme for NvmeInterface {
 
 
 
-
-
-
-
         Ok(())
     }
 
@@ -145,18 +209,26 @@ impl BlockScheme for NvmeInterface {
 
 
 impl NvmeInterface {
-    pub fn nvme_submit_sync_cmd(&self, cmd:NvmeCommand) -> DeviceResult {
+    pub fn nvme_alloc_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
 
-        match NvmeCommand{
+        Ok(())
+    }
+
+
+
+
+    pub fn nvme_submit_sync_cmd(&self, cmd: NvmeCommand) -> DeviceResult {
+
+        match cmd {
+            NvmeCommand::NvmeRWCommand => {
+
+            }
+
             NvmeCommand::NvmeCreateCq => {
 
             }
 
             NvmeCommand::NvmeCreateSq => {
-
-            }
-
-            NvmeCommand::NvmeRWCommand => {
 
             }
             
@@ -182,9 +254,6 @@ impl NvmeInterface {
 
     pub fn nvme_read_completion_status(&self, nvmeq: &mut NvmeQueue) -> Option<usize>{
 
-
-
-
         Some(0)
     }
 
@@ -197,64 +266,26 @@ impl NvmeInterface {
 
 
         // ring the doorbell
-        
+
     }
+
+
+
 }
 
 
 
 
 
-// /*
-//  * Returns 0 on success.  If the result is negative, it's a Linux error code;
-//  * if the result is positive, it's an NVM Express status code
-//  */
-// int __nvme_submit_sync_cmd(struct request_queue *q, struct nvme_command *cmd,
-// 		union nvme_result *result, void *buffer, unsigned bufflen,
-// 		unsigned timeout, int qid, int at_head,
-// 		blk_mq_req_flags_t flags)
-// {
-// 	struct request *req;
-// 	int ret;
-
-// 	if (qid == NVME_QID_ANY)
-// 		req = blk_mq_alloc_request(q, nvme_req_op(cmd), flags);
-// 	else
-// 		req = blk_mq_alloc_request_hctx(q, nvme_req_op(cmd), flags,
-// 						qid ? qid - 1 : 0);
-
-// 	if (IS_ERR(req))
-// 		return PTR_ERR(req);
-// 	nvme_init_request(req, cmd);
-
-// 	if (timeout)
-// 		req->timeout = timeout;
-
-// 	if (buffer && bufflen) {
-// 		ret = blk_rq_map_kern(q, req, buffer, bufflen, GFP_KERNEL);
-// 		if (ret)
-// 			goto out;
-// 	}
-
-// 	req->rq_flags |= RQF_QUIET;
-// 	ret = nvme_execute_rq(req, at_head);
-// 	if (result && ret >= 0)
-// 		*result = nvme_req(req)->result;
-//  out:
-// 	blk_mq_free_request(req);
-// 	return ret;
-// }
 
 
 
 
-
-enum NvmeCommand {
+pub enum NvmeCommand {
     NvmeRWCommand,
 	NvmeCreateCq,
-	NvmeCreateSq,
+    NvmeCreateSq,
 }
-
 
 pub struct NvmeCreateCq{
     pub opcode: u8,
@@ -318,14 +349,6 @@ impl NvmeCreateSq{
     }
 }
 
-
-
-
-
-
-
-
-
 pub struct NvmeRWCommand {
     pub opcode: u8,
     pub flags: u8,
@@ -387,25 +410,37 @@ impl NvmeRWCommand{
 }
 
 
-
-// static ulong nvme_blk_read(struct udevice *udev, lbaint_t blknr,
-// 			   lbaint_t blkcnt, void *buffer)
-// {
-// 	return nvme_blk_rw(udev, blknr, blkcnt, buffer, true);
-// }
-
-// static ulong nvme_blk_write(struct udevice *udev, lbaint_t blknr,
-// 			    lbaint_t blkcnt, const void *buffer)
-// {
-// 	return nvme_blk_rw(udev, blknr, blkcnt, (void *)buffer, false);
-// }
-
-// static const struct blk_ops nvme_blk_ops = {
-// 	.read	= nvme_blk_read,
-// 	.write	= nvme_blk_write,
-// };
-
-
-
-
-hdiutil convert -format UDRW -o /Users/Downloads/ubuntu-18.04.6-desktop-amd64 /Users/Downloads/ubuntu-18.04.6-desktop-amd64.iso
+#[deny(non_camel_case_types)]
+pub enum NvmeRegister{
+	NvmeRegCap	= 0x0000,	/* Controller Capabilities */
+    NvmeRegVs	= 0x0008,	/* Version */
+    NvmeRegIntms	= 0x000c,	/* Interrupt Mask Set */
+    NvmeRegIntmc	= 0x0010,	/* Interrupt Mask Clear */
+    NvmeRegCc	= 0x0014,	/* Controller Configuration */
+    NvmeRegCsts	= 0x001c,	/* Controller Status */
+    NvmeRegNssr	= 0x0020,	/* NVM Subsystem Reset */
+    NvmeRegAqa	= 0x0024,	/* Admin Queue Attributes */
+    NvmeRegAsq	= 0x0028,	/* Admin Submission Queue Base Address */
+    NvmeRegAcq	= 0x0030,	/* Admin Completion Queue Base Address */
+    NvmeRegCmbloc	= 0x0038,	/* Controller Memory Buffer Location */
+    NvmeRegCmbsz	= 0x003c,	/* Controller Memory Buffer Size */
+    NvmeRegBpinfo	= 0x0040,	/* Boot Partition Information */
+ 	NvmeRegBprsel	= 0x0044,	/* Boot Partition Read Select */
+	NvmeRegBpmbl	= 0x0048,	/* Boot Partition Memory Buffer
+					 * Location
+					 */
+	NvmeRegCmbmsc = 0x0050,	/* Controller Memory Buffer Memory
+					 * Space Control
+					 */
+	NvmeRegCrto	= 0x0068,	/* Controller Ready Timeouts */
+	NvmeRegPmrcap	= 0x0e00,	/* Persistent Memory Capabilities */
+    NvmeRegPmrctl	= 0x0e04,	/* Persistent Memory Control */
+    NvmeRegPmrsts	= 0x0e08,	/* Persistent Memory Status */
+    NvmeRegPmrebs	= 0x0e0c,	/* Persistent Memory Region Elasticity
+					 * Buffer Size
+					 */
+	NvmeRegPmrswtp = 0x0e10,	/* Persistent Memory Region Sustained
+					 * Write Throughput
+					 */
+	NvmeRegDbs	= 0x1000,	/* SQ 0 Tail Doorbell */
+}

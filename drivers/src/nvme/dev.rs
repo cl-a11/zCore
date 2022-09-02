@@ -19,7 +19,7 @@ pub struct NvmeDev{
     pub io_queues: Vec<NvmeQueue>,
 
     // bar0~bar5, 目前只用bar0
-    //base address register, 对应的是bar0 
+    //base address register  pcie controller 向os提供的一组寄存器用于访问设备内部的空间(接收控制信息)
     pub bar: usize,
 }
 

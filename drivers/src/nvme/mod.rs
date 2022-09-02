@@ -5,7 +5,7 @@ pub mod interface;
 
 
 
-pub use queue::NvmeQueue;
+pub use queue::*;
+pub use interface::*;
+pub use dev::*;
 
-pub use interface::NvmeInterface;
-pub use interface::NvmeRWCommand;
