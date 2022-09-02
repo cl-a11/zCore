@@ -4,7 +4,7 @@ use core::mem::size_of;
 use core::ptr::read_volatile;
 
 use crate::scheme::{BlockScheme, Scheme};
-use crate::{DeviceResult};
+use crate::DeviceResult;
 
 use super::dev::*;
 use super::driver::*;
@@ -276,15 +276,7 @@ impl NvmeInterface {
         // ring the doorbell
 
     }
-
-
-
 }
-
-
-
-
-
 
 
 
