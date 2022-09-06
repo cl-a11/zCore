@@ -1,27 +1,64 @@
 use core::marker::PhantomData;
 use volatile::Volatile;
+use alloc::slice;
 
 
+
+
+
+use super::NvmeCreateSq;
+use super::NvmeCreateCq;
+
+
+// 0x40
+pub const NVME_COMMAND_SIZE: usize = 64;
 
 
 pub struct Nvme<P: Provider> {
     header: usize,
     size: usize,
     provider: PhantomData<P>,
-    registers: &'static mut [Volatile<u32>],
+    sq: &'static mut[Volatile<NvmeCreateSq>],
+    cq: &'static mut[Volatile<NvmeCreateCq>],
+
+    // registers: &'static mut [Volatile<u32>],
 }
 
 impl<P: Provider> Nvme<P> {
-    pub fn handle_interrupt(&mut self) -> bool {
-        // let icr = self.registers[foo].read();
-        // if icr != 0 {
-        //     // clear it
-        //     self.registers[foo].write(icr);
-        //     true
-        // } else {
-        //     false
-        // }
 
+    pub fn new(header:usize, size:usize) -> Self{
+
+        let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE);
+        let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE);
+
+        let submit_queue = unsafe{
+            slice::from_raw_parts_mut(
+                sq_va as *mut Volatile<NvmeCreateSq>, 
+                PAGE_SIZE/ NVME_COMMAND_SIZE
+            )
+        };
+
+        let complete_queue = unsafe{
+            slice::from_raw_parts_mut(
+                cq_va as *mut Volatile<NvmeCreateCq>, 
+                PAGE_SIZE/ NVME_COMMAND_SIZE
+            )
+        };
+
+        let sq_cmd = NvmeCreateSq::new_create_sq_command();
+        submit_queue[0].write(sq_cmd);
+
+        Nvme{
+            header,
+            size,
+            provider: PhantomData,
+            sq: submit_queue,
+            cq: complete_queue,
+        }
+    
+    }
+
+    pub fn handle_interrupt(&mut self) -> bool {
         true
     }
 }
@@ -33,10 +70,6 @@ impl<P: Provider> Drop for Nvme<P> {
 
     }
 }
-
-
-
-
 
 
 pub struct NvmeDriver {

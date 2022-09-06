@@ -8,4 +8,5 @@ pub mod interface;
 pub use queue::*;
 pub use interface::*;
 pub use dev::*;
+pub use driver::*;
 

@@ -207,9 +207,12 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
 
                 
                 let dev = Device::Block(
-                    crate::nvme::NvmeInterface::new(
-                        irq.unwrap_or(0),
-                        vaddr,
+                    Arc::new(
+                        crate::nvme::NvmeInterface::new(
+                            irq.unwrap_or(0),
+                            vaddr,
+                            len as usize,
+                        )?
                     )
                 );
 

@@ -1,7 +1,9 @@
-use alloc::collections::{VecDeque};
+use alloc::slice;
+use alloc::collections::VecDeque;
+use core::marker::PhantomData;
 
 
-
+use volatile::Volatile;
 
 use super::NvmeCommand;
 

@@ -23,7 +23,7 @@ pub struct NvmeInterface {
 
 impl NvmeInterface{
 
-    pub fn new(irq: usize, bar:usize) -> DeviceResult<NvmeInterface>{
+    pub fn new(irq: usize, bar:usize, len:usize) -> DeviceResult<NvmeInterface>{
 
         let dev = NvmeDev::new(bar);
         let driver = NvmeDriver::new();
@@ -36,7 +36,7 @@ impl NvmeInterface{
             irq,
         };
 
-        interface.init(bar)?;
+        interface.init(bar,len)?;
 
         Ok(interface)
 
@@ -50,34 +50,36 @@ impl NvmeInterface{
     // 第五，添加nvme Controller设备，即/dev/nvme#，提供ioctl接口。这样userspace就可以通过ioctl系统调用发送nvme admin command。
 
     // 参考 linux 5.19  nvme_reset_work    nvme_pci_configure_admin_queue
-    pub fn init(&mut self, bar: usize) -> DeviceResult {
+    pub fn init(&mut self, bar: usize, len:usize) -> DeviceResult {
         
         //第一步在pci扫描到设备时已经完成
 
         //第二步 设置admin queue
-        self.nvme_alloc_queue(0, 32);
-
-        //admin queue +io queue
+        let nvme: Nvme<ProviderImpl> = super::Nvme::new(bar, len);
+        
+        
+        
+        
+        
+        
+        //admin queue + io queue
         let num_queues = 2;
-
+        
         let dev_cap_addr = (bar as u64 + NvmeRegister::NvmeRegCap as u64)   as *const u64;
-
+        
         let dev_cap = unsafe { read_volatile(dev_cap_addr) };
-
-
+        
         let db_stride = 1 << (dev_cap >> 32 & 0xfff);
-
+        
         let dev_dbs = bar + 4096;
-
-
-    
+        
         let cap = dev_cap;
-
+        
+        self.nvme_alloc_queue(1, 32);
+        
 
         //分配一个nvme queue，包括其需要的CQ和SQ空间和DMA地址,注意这里第一个io queue使用的entry是0,也就是和admin queue共用
-        self.nvme_alloc_queue(0, 32);
-
-
+        // self.nvme_alloc_queue(0, 32);
         // /*
         // #define NVME_CAP_STRIDE(cap)	(((cap) >> 32) & 0xf)
         // 1 << NVME_CAP_STRIDE(dev->ctrl.cap);
@@ -90,7 +92,6 @@ impl NvmeInterface{
         Ok(())
     }
 }
-
 
 
 
@@ -225,34 +226,34 @@ impl NvmeInterface {
 
 
 
-    pub fn nvme_submit_sync_cmd(&self, cmd: NvmeCommand) -> DeviceResult {
+    pub fn nvme_submit_sync_cmd(&mut self, cmd: NvmeCommand) -> DeviceResult {
 
-        match cmd {
-            NvmeCommand::NvmeRWCommand => {
+        // match cmd {
+        //     NvmeCommand::NvmeRWCommand => {
 
-            }
+        //     }
 
-            NvmeCommand::NvmeCreateCq => {
+        //     NvmeCommand::NvmeCreateCq => {
 
-            }
+        //     }
 
-            NvmeCommand::NvmeCreateSq => {
+        //     NvmeCommand::NvmeCreateSq => {
 
-            }
+        //     }
             
-            _ => {
-                info!("wrong command");
-            }
+        //     _ => {
+        //         info!("wrong command");
+        //     }
             
-        }
-        let mut io_queue = &mut self.dev.io_queues[0];
+        // }
+        // let io_queue = &mut self.dev.io_queues[0];
 
-        // copy a command into a queue and ring the doorbell
-        self.nvme_submit_cmd(io_queue, cmd);
+        // // copy a command into a queue and ring the doorbell
+        // self.nvme_submit_cmd(io_queue, cmd);
 
     
-        // wait for the command to complete
-        self.nvme_read_completion_status(io_queue);
+        // // wait for the command to complete
+        // self.nvme_read_completion_status(io_queue);
 
 
 
@@ -260,12 +261,12 @@ impl NvmeInterface {
     }
 
 
-    pub fn nvme_read_completion_status(&self, nvmeq: &mut NvmeQueue) -> Option<usize>{
+    pub fn nvme_read_completion_status(&mut self, nvmeq: &mut NvmeQueue) -> Option<usize>{
 
         Some(0)
     }
 
-    pub fn nvme_submit_cmd(&self, nvmeq: &mut NvmeQueue, cmd:NvmeCommand){
+    pub fn nvme_submit_cmd(&mut self, nvmeq: &mut NvmeQueue, cmd:NvmeCommand){
 
 
         let cmdsize = size_of::<NvmeRWCommand>();
@@ -280,25 +281,42 @@ impl NvmeInterface {
 
 
 
-
+#[derive(Copy, Clone, Debug)]
 pub enum NvmeCommand {
     NvmeRWCommand,
-	NvmeCreateCq,
     NvmeCreateSq,
+	NvmeCreateCq,
 }
 
+// impl NvmeCommand{
+//     pub fn from_create_sq(x: NvmeCreateSq) -> NvmeCommand {
+//         x
+//     }
+
+//     // pub fn to_create_sq(&self) -> NvmeCreateSq{
+//     //     match self {
+//     //         NvmeCommand::NvmeCreateSq => ,
+//     //         _ => None,
+//     //     }
+//     // }
+
+// }
+
+// 1+1+2+4*5+8+8+2+2+2+2+4*4 = 64B
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
 pub struct NvmeCreateCq{
     pub opcode: u8,
     pub flags: u8,
     pub command_id: u16,
-    pub rsvd1: Vec<u32>,
+    pub rsvd1: [u32;5],
     pub prp1: u64,
     pub rsvd8: u64,
     pub sqid: u16,
     pub qsize: u16,
     pub cq_flags: u16,
     pub irq_vector: u16,
-    pub rsvd12: Vec<u32>,
+    pub rsvd12: [u32;4],
 }
 
 impl NvmeCreateCq{
@@ -307,29 +325,33 @@ impl NvmeCreateCq{
             opcode: 0x04,
             flags: 0,
             command_id: 0,
-            rsvd1: alloc::vec![0 as u32; 5],
+            rsvd1: [0 as u32; 5],
             prp1: 0,
             rsvd8: 0,
             sqid: 0,
             qsize: 0,
             cq_flags: 0,
             irq_vector: 0,
-            rsvd12: alloc::vec![0 as u32; 4],
+            rsvd12: [0 as u32; 4],
         }
     }
 }
+
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
 pub struct NvmeCreateSq{
     pub opcode: u8,
     pub flags: u8,
     pub command_id: u16,
-    pub rsvd1: Vec<u32>,
+    pub rsvd1: [u32;5],
     pub prp1: u64,
     pub rsvd8: u64,
     pub sqid: u16,
     pub qsize: u16,
     pub sq_flags: u16,
     pub cqid: u16,
-    pub rsvd12: Vec<u32>,
+    pub rsvd12: [u32;4],
 }
 impl NvmeCreateSq{
     pub fn new_create_sq_command() -> Self{
@@ -337,14 +359,14 @@ impl NvmeCreateSq{
             opcode: 0x05,
             flags: 0,
             command_id: 0,
-            rsvd1: alloc::vec![0 as u32; 5],
+            rsvd1: [0 as u32; 5],
             prp1: 0,
             rsvd8: 0,
             sqid: 0,
             qsize: 0,
             sq_flags: 0,
             cqid: 0,
-            rsvd12: alloc::vec![0 as u32; 4],
+            rsvd12: [0 as u32; 4],
         }
     }
 }
