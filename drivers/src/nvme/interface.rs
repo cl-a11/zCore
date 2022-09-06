@@ -1,7 +1,7 @@
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::mem::size_of;
-use core::ptr::read_volatile;
+use core::ptr::{read_volatile, write_volatile};
 
 use crate::scheme::{BlockScheme, Scheme};
 use crate::DeviceResult;
@@ -54,18 +54,43 @@ impl NvmeInterface{
         
         //第一步在pci扫描到设备时已经完成
 
-        //第二步 设置admin queue
+        //第二步 设置admin queue,包括其需要的CQ和SQ空间和DMA地址
         let nvme: Nvme<ProviderImpl> = super::Nvme::new(bar, len);
-        
-        
-        
-        
-        
-        
-        //admin queue + io queue
-        let num_queues = 2;
-        
-        let dev_cap_addr = (bar as u64 + NvmeRegister::NvmeRegCap as u64)   as *const u64;
+
+
+
+        // admin queue 队列深度 32
+        // aqa寄存器高16bit存储cq深度，低16bit存储sq深度
+        let aqa_low_16 = 32 as u16;
+        let aqa_high_16 = 32 as u16;
+        let aqa = (aqa_high_16 as u32) << 16 | aqa_low_16 as u32;
+        let aqa_address = bar + NVME_REG_AQA;
+
+        // 将admin queue配置信息写入nvme设备寄存器AQA, admin_queue_attributes
+        unsafe{
+            write_volatile(aqa_address as *mut u32, aqa);
+        }
+
+        // 将admin queue的sq dma物理地址写入nvme设备上的寄存器ASQ
+        let sq_dma_pa = nvme.sq_dma_pa as u32;
+        let asq_address = bar + NVME_REG_ASQ ;
+        unsafe{
+            write_volatile(asq_address as *mut u32, sq_dma_pa);
+        }
+
+        // 将admin queue的cq dma物理地址写入nvme设备上的寄存器ACQ
+        let cq_dma_pa = nvme.cq_dma_pa as u32;
+        let acq_address = bar + NVME_REG_ACQ;
+        unsafe{
+            write_volatile(acq_address as *mut u32, cq_dma_pa);
+        }
+
+        //设置admin sq cq的参数, doorbell register寄存器地址等信息
+        //设置head tail q_db 
+
+        // let q_db = dbs[qid * 2 * db_stride];
+
+        let dev_cap_addr = (bar as u64 + NVME_REG_CAP as u64)   as *const u64;
         
         let dev_cap = unsafe { read_volatile(dev_cap_addr) };
         
@@ -74,11 +99,19 @@ impl NvmeInterface{
         let dev_dbs = bar + 4096;
         
         let cap = dev_cap;
+
+
+
+
+        let q_head = 0;
+        let q_phase = 1;
+
         
-        self.nvme_alloc_queue(1, 32);
+        // self.nvme_alloc_queue(1, 32);
+        // self.nvme_init_queue(queue_id, q_depth);
         
 
-        //分配一个nvme queue，包括其需要的CQ和SQ空间和DMA地址,注意这里第一个io queue使用的entry是0,也就是和admin queue共用
+        // 分配一个nvme queue，包括其需要的CQ和SQ空间和DMA地址,注意这里第一个io queue使用的entry是0,也就是和admin queue共用
         // self.nvme_alloc_queue(0, 32);
         // /*
         // #define NVME_CAP_STRIDE(cap)	(((cap) >> 32) & 0xf)
@@ -219,6 +252,16 @@ impl BlockScheme for NvmeInterface {
 
 impl NvmeInterface {
     pub fn nvme_alloc_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
+
+        Ok(())
+    }
+
+
+    pub fn nvme_init_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
+
+
+
+
 
         Ok(())
     }

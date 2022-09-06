@@ -20,6 +20,8 @@ pub struct Nvme<P: Provider> {
     provider: PhantomData<P>,
     sq: &'static mut[Volatile<NvmeCreateSq>],
     cq: &'static mut[Volatile<NvmeCreateCq>],
+    pub sq_dma_pa: usize,
+    pub cq_dma_pa: usize,
 
     // registers: &'static mut [Volatile<u32>],
 }
@@ -54,6 +56,8 @@ impl<P: Provider> Nvme<P> {
             provider: PhantomData,
             sq: submit_queue,
             cq: complete_queue,
+            sq_dma_pa: sq_pa,
+            cq_dma_pa: cq_pa,
         }
     
     }

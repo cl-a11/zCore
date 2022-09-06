@@ -116,6 +116,7 @@ cq是在host的内存中, hist记住上次的tail, 检查p 得出新的tail
 # nvme设备初始化
 
 参考 <https://blog.csdn.net/yiyeguzhou100/article/details/105478124>
+
 ## 1. 创建admin queue
 
 linux 5.19
@@ -147,3 +148,8 @@ struct nvme_bar {
 	__u64 acq;	/* Admin CQ Base Address */
 };
 ```
+
+
+# 更多参考
+
+<https://blog.csdn.net/panzhenjie/article/details/51581063>

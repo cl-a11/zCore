@@ -24,8 +24,6 @@ pub struct NvmeQueue{
 
     pub qid: usize,
 
-
-
 }
 
 
