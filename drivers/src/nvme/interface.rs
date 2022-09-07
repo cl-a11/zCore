@@ -85,6 +85,22 @@ impl NvmeInterface{
             write_volatile(acq_address as *mut u32, cq_dma_pa);
         }
 
+        let admin_sq_db = bar + NVME_REG_DBS;
+
+        //db记录了sq和cq的头和尾指针，高16bit存储sq头指针，低16bit存储cq头指针
+        unsafe{
+            write_volatile(admin_sq_db as *mut u32, 1)
+        }
+
+
+
+
+
+
+
+
+
+
         //设置admin sq cq的参数, doorbell register寄存器地址等信息
         //设置head tail q_db 
 
@@ -236,7 +252,7 @@ impl BlockScheme for NvmeInterface {
         // c.prp1 = src_ptr;
         // c.prp2 = prp2;
 
-        self.nvme_submit_sync_cmd(c);
+        // self.nvme_submit_sync_cmd(c);
 
 
 

@@ -153,3 +153,4 @@ struct nvme_bar {
 # 更多参考
 
 <https://blog.csdn.net/panzhenjie/article/details/51581063>
+<https://nvmexpress.org/developers/nvme-specification/>
