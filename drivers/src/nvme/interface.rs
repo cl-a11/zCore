@@ -28,7 +28,6 @@ impl NvmeInterface{
         let dev = NvmeDev::new(bar);
         let driver = NvmeDriver::new();
 
-
         let mut interface = NvmeInterface{
             name: String::from("nvme"),
             dev,
@@ -58,6 +57,8 @@ impl NvmeInterface{
         let nvme: Nvme<ProviderImpl> = super::Nvme::new(bar, len);
 
 
+        // let q_db = dbs[qid * 2 * db_stride]
+
 
         // admin queue 队列深度 32
         // aqa寄存器高16bit存储cq深度，低16bit存储sq深度
@@ -85,20 +86,42 @@ impl NvmeInterface{
             write_volatile(acq_address as *mut u32, cq_dma_pa);
         }
 
-        let admin_sq_db = bar + NVME_REG_DBS;
 
+        //&'static mut [Volatile<u32>]
+        let dev_dbs = (bar + NVME_REG_DBS) as u32 as *mut u32;
+
+    
         //db记录了sq和cq的头和尾指针，高16bit存储sq头指针，低16bit存储cq头指针
+
+        /*
+        Doorbell  Stride  (DSTRD):  Each  Submission  Queue  and  Completion  Queue  
+        Doorbell  register  is  32-bits  in  size
+        This  register  indicates  the  stride  between  
+        doorbell registers. The stride is specified as (2 ^ (2 + DSTRD)) in bytes. A value 
+        of 0h indicates a stride of 4 bytes, where the doorbell registers are packed without 
+        reserved space between each register. 
+        */
+        
+        // unsafe{
+        //     write_volatile(dev_dbs as *mut u32, 0)
+        // }
+        // unsafe{
+        //     write_volatile(dev_dbs, 0)
+        // }
+
+        //tell the doorbell register tail = 0
+        let admin_q_db = dev_dbs;
         unsafe{
-            write_volatile(admin_sq_db as *mut u32, 1)
+            write_volatile(admin_q_db, 2)
         }
 
 
+        //io queue db = dev_dbs[qid * 2 * dev->db_stride]
+            
+        //至此 admin queue 到sq初始化完毕
 
-
-
-
-
-
+        // {BAR0，BAR1}+1000+Doorbell（寄存器内部偏移）={0XD1100000}+1000h+(2y * (4 <<CAP.DSTRD)
+        // =0XD1101000+(2*4* (4 <<0)= 0XD1101000+32=0XD1101000+20h=0XD1101020
 
 
         //设置admin sq cq的参数, doorbell register寄存器地址等信息

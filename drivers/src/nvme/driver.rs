@@ -50,6 +50,9 @@ impl<P: Provider> Nvme<P> {
         let sq_cmd = NvmeCreateSq::new_create_sq_command();
         submit_queue[0].write(sq_cmd);
 
+        let cq_cmd = NvmeCreateCq::new_create_cq_command();
+        complete_queue[0].write(cq_cmd);
+
         Nvme{
             header,
             size,
