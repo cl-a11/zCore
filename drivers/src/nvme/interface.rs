@@ -102,14 +102,10 @@ impl NvmeInterface{
         reserved space between each register. 
         */
         
-        // unsafe{
-        //     write_volatile(dev_dbs as *mut u32, 0)
-        // }
-        // unsafe{
-        //     write_volatile(dev_dbs, 0)
-        // }
 
-        //tell the doorbell register tail = 0
+        // tell the doorbell register tail = 2
+        // 写入了2个命令
+        //至此 admin queue初始化完毕
         let admin_q_db = dev_dbs;
         unsafe{
             write_volatile(admin_q_db, 2)
@@ -118,8 +114,6 @@ impl NvmeInterface{
 
         //io queue db = dev_dbs[qid * 2 * dev->db_stride]
             
-        //至此 admin queue 到sq初始化完毕
-
         // {BAR0，BAR1}+1000+Doorbell（寄存器内部偏移）={0XD1100000}+1000h+(2y * (4 <<CAP.DSTRD)
         // =0XD1101000+(2*4* (4 <<0)= 0XD1101000+32=0XD1101000+20h=0XD1101020
 
