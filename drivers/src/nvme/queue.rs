@@ -7,6 +7,15 @@ use volatile::Volatile;
 
 use super::NvmeCommand;
 
+
+pub struct NvmeCommandRaw{
+    pub bytes: [u64; 8],
+}
+
+pub struct NvmeCompletionRaw{
+    pub bytes: [u64; 2],
+}
+
 pub struct NvmeQueue{
     pub sq: VecDeque<NvmeCommand>,
     pub cq: VecDeque<NvmeCommand>,
@@ -26,13 +35,7 @@ pub struct NvmeQueue{
 
 }
 
-
-
-
-
-
 impl NvmeQueue{
-
     /* 分配一个nvme queue，包括其需要的CQ和SQ空间和DMA地址 */
     /* 通过admin queue告知nvme设备创建cq和sq，并且分配对应的irq */
     pub fn new() -> Self{

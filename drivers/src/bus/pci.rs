@@ -192,7 +192,7 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 return Ok(dev);
             }
         }
-        (0x144d, 0xa801) => {
+        (0x144d, 0xa808) => {
             if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
                 info!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
                 #[cfg(target_arch = "riscv64")]
@@ -220,13 +220,6 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
             }
             
         }
-        // (0x144d, 0xa801) => {
-        //     if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
-        //         info!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
-        //         return Err(DeviceError::NotSupported);
-        //     }
-            
-        // }
         (0x8086, 0x10fb) => {
             // 82599ES 10-Gigabit SFI/SFP+ Network Connection
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {

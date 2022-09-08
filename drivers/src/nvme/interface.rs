@@ -123,21 +123,17 @@ impl NvmeInterface{
 
         // let q_db = dbs[qid * 2 * db_stride];
 
-        let dev_cap_addr = (bar as u64 + NVME_REG_CAP as u64)   as *const u64;
+        // let dev_cap_addr = (bar as u64 + NVME_REG_CAP as u64)   as *const u64;
         
-        let dev_cap = unsafe { read_volatile(dev_cap_addr) };
+        // let dev_cap = unsafe { read_volatile(dev_cap_addr) };
         
-        let db_stride = 1 << (dev_cap >> 32 & 0xfff);
+        // let db_stride = 1 << (dev_cap >> 32 & 0xfff);
         
-        let dev_dbs = bar + 4096;
+        // let dev_dbs = bar + 4096;
         
-        let cap = dev_cap;
-
-
-
-
-        let q_head = 0;
-        let q_phase = 1;
+        // let cap = dev_cap;
+        // let q_head = 0;
+        // let q_phase = 1;
 
         
         // self.nvme_alloc_queue(1, 32);
@@ -214,7 +210,7 @@ impl BlockScheme for NvmeInterface {
         //一次只读一块 512B
         let total_len = 512;
         let blkcnt = 1;
-        let c = NvmeRWCommand::new_read_command();
+        let mut c = NvmeRWCommand::new_read_command();
 
         /* 
         每个NVMe命令中有两个域：PRP1和PRP2，Host就是通过这两个域告诉SSD数据在内存中的位置或者数据需要写入的地址
@@ -229,8 +225,28 @@ impl BlockScheme for NvmeInterface {
         */
         let dma_addr = 0;
         let prp1 = dma_addr;
-
         let prp2 : u64 = 0;
+        
+        c.prp1 = prp1;
+        c.prp2 = prp2;
+        c.slba = blkcnt;
+
+        // 把命令写入io queue的sq中
+        // self.dev.io_queues[0].sq.write(c);
+
+        // 修改door bell register, 通知SSD有新的命令
+        
+        // tail = xx
+        // self.dev.io_queues[0].sq_db.write(1);
+
+        // submit_queue[0].write(c);
+
+        // c.slba = 0;
+        // c.length = lbas -1;
+
+
+
+
 
 
         Ok(())
@@ -260,8 +276,9 @@ impl BlockScheme for NvmeInterface {
         let dma_addr = 0;
         let prp1 = dma_addr;
         let prp2 : u64 = 0;
-
         let src_ptr = buf.as_ptr() as u64;
+
+        
         
         //riscv是小端模式, 故这里不做转换
         // c.slba = block_id as u64;
@@ -285,17 +302,11 @@ impl BlockScheme for NvmeInterface {
 
 impl NvmeInterface {
     pub fn nvme_alloc_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
-
         Ok(())
     }
 
 
     pub fn nvme_init_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
-
-
-
-
-
         Ok(())
     }
 
@@ -303,7 +314,6 @@ impl NvmeInterface {
 
 
     pub fn nvme_submit_sync_cmd(&mut self, cmd: NvmeCommand) -> DeviceResult {
-
         // match cmd {
         //     NvmeCommand::NvmeRWCommand => {
 
@@ -327,12 +337,8 @@ impl NvmeInterface {
         // // copy a command into a queue and ring the doorbell
         // self.nvme_submit_cmd(io_queue, cmd);
 
-    
         // // wait for the command to complete
         // self.nvme_read_completion_status(io_queue);
-
-
-
         Ok(())
     }
 
@@ -577,3 +583,10 @@ pub const NVME_REG_PMRSWTP:usize = 0x0e10;	/* Persistent Memory Region Sustained
          				 * Write Throughput
          				 */
 pub const NVME_REG_DBS:usize	= 0x1000;	/* SQ 0 Tail Doorbell */
+
+
+// 16 bytes
+pub struct NvmeCompleteQueue{
+    pub byte8_1: u64,
+    pub byte8_2: u64,
+}

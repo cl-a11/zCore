@@ -18,7 +18,9 @@ pub struct Nvme<P: Provider> {
     header: usize,
     size: usize,
     provider: PhantomData<P>,
+    //  submission queue 每个命令64字节
     sq: &'static mut[Volatile<NvmeCreateSq>],
+    // completion queue 每个命令16字节
     cq: &'static mut[Volatile<NvmeCreateCq>],
     pub sq_dma_pa: usize,
     pub cq_dma_pa: usize,
@@ -47,11 +49,13 @@ impl<P: Provider> Nvme<P> {
             )
         };
 
-        let sq_cmd = NvmeCreateSq::new_create_sq_command();
-        submit_queue[0].write(sq_cmd);
+        let cmd_create_sq = NvmeCreateSq::new_create_sq_command();
+        submit_queue[0].write(cmd_create_sq);
 
-        let cq_cmd = NvmeCreateCq::new_create_cq_command();
-        complete_queue[0].write(cq_cmd);
+        let cmd_create_cq = NvmeCreateCq::new_create_cq_command();
+        let z: NvmeCreateSq = unsafe { core::mem::transmute(cmd_create_cq) };
+        submit_queue[1].write(z);
+
 
         Nvme{
             header,
