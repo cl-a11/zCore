@@ -156,24 +156,18 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
         debug!("MSI not found, using PCI interrupt");
     }
 
-    info!("pci device enable done");
+    warn!("pci device enable done");
 
     assigned_irq
 }
 
 pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> DeviceResult<Device> {
     let name = format!("enp{}s{}f{}", dev.loc.bus, dev.loc.device, dev.loc.function);
+    warn!("vendor_id {:#x?}  device_id {:#x?}", dev.id.vendor_id, dev.id.device_id);
     match (dev.id.vendor_id, dev.id.device_id) {
         (0x8086, 0x100e) | (0x8086, 0x100f) | (0x8086, 0x10d3) => {
-            // 0x100e
-            // 82540EM Gigabit Ethernet Controller
-            // 0x100f
-            // 82545EM Gigabit Ethernet Controller (Copper)
-            // 0x10d3
-            // 82574L Gigabit Network Connection
-            // (e1000e 8086:10d3)
             if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
-                info!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
+                warn!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
                 #[cfg(target_arch = "riscv64")]
                 let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
 
@@ -192,9 +186,11 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 return Ok(dev);
             }
         }
-        (0x144d, 0xa808) => {
+
+        (0x1b36, 0x10) => {
             if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
-                info!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
+                warn!("Found QEMU NVM Express Controller dev {:#x?}", dev);
+                warn!("Found QEMU NVM Express Controller BARs {:#x?}", dev.bars);
                 #[cfg(target_arch = "riscv64")]
                 let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
 
@@ -215,17 +211,42 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                         )?
                     )
                 );
-
                 return Ok(dev);
             }
-            
+        }
+
+        (0x144d, 0xa808) => {
+            if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
+                warn!("Found e1000e dev {:?} BAR0 {:#x?}", dev, addr);
+                #[cfg(target_arch = "riscv64")]
+                let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
+
+                if let Some(m) = mapper {
+                    m.query_or_map(addr as usize, PAGE_SIZE * 8);
+                }
+
+                let irq = unsafe { enable(dev.loc, addr) };
+                let vaddr = phys_to_virt(addr as usize);
+
+                
+                let dev = Device::Block(
+                    Arc::new(
+                        crate::nvme::NvmeInterface::new(
+                            irq.unwrap_or(0),
+                            vaddr,
+                            len as usize,
+                        )?
+                    )
+                );
+                return Ok(dev);
+            }
         }
         (0x8086, 0x10fb) => {
             // 82599ES 10-Gigabit SFI/SFP+ Network Connection
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
                 let irq = unsafe { enable(dev.loc, 0) };
                 let vaddr = phys_to_virt(addr as usize);
-                info!("Found ixgbe dev {:#x}, irq: {:?}", vaddr, irq);
+                warn!("Found ixgbe dev {:#x}, irq: {:?}", vaddr, irq);
                 /*
                 let index = NET_DRIVERS.read().len();
                 PCI_DRIVERS.lock().insert(
@@ -238,14 +259,14 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
         }
         (0x8086, 0x1533) => {
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                info!("Intel Corporation I210 Gigabit Network Connection");
-                info!("DEV: {:?}, BAR0: {:#x}", dev, addr);
+                warn!("Intel Corporation I210 Gigabit Network Connection");
+                warn!("DEV: {:?}, BAR0: {:#x}", dev, addr);
                 return Err(DeviceError::NotSupported);
             }
         }
         (0x8086, 0x1539) => {
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                info!(
+                warn!(
                     "Found Intel I211 ethernet controller dev {:?}, addr: {:x?}",
                     dev, addr
                 );
@@ -258,7 +279,7 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
         // Mass storage class
         // SATA subclass
         if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[5] {
-            info!("Found AHCI dev {:?} BAR5 {:x?}", dev, addr);
+            warn!("Found AHCI dev {:?} BAR5 {:x?}", dev, addr);
             /*
             let irq = unsafe { enable(dev.loc) };
             assert!(len as usize <= PAGE_SIZE);
@@ -302,10 +323,10 @@ pub fn init(mapper: Option<Arc<dyn IoMapper>>) -> DeviceResult<Vec<Device>> {
 
     let mut dev_list = Vec::new();
     let pci_iter = unsafe { scan_bus(&PortOpsImpl, PCI_ACCESS) };
-    info!("");
-    info!("--------- PCI bus:device:function ---------");
+    warn!("");
+    warn!("--------- PCI bus:device:function ---------");
     for dev in pci_iter {
-        info!(
+        warn!(
             "pci: {}:{}:{} {:04x}:{:04x} ({} {}) irq: {}:{:?}",
             dev.loc.bus,
             dev.loc.device,
@@ -326,8 +347,8 @@ pub fn init(mapper: Option<Arc<dyn IoMapper>>) -> DeviceResult<Vec<Device>> {
             ),
         }
     }
-    info!("---------");
-    info!("");
+    warn!("---------");
+    warn!("");
 
     Ok(dev_list)
 }
