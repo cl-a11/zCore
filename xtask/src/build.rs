@@ -143,6 +143,8 @@ impl QemuArgs {
             .args(&["-display", "none"])
             .args(&["-drive" ,"file=nvme.img,if=none,id=nvm"])
             .args(&["-device" ,"nvme,serial=xxxxx,drive=nvm"])
+            .args(&["-netdev" ,"user,id=net1,hostfwd=tcp::8000-:80,hostfwd=tcp::2222-:2222,hostfwd=udp::6969-:6969"])
+            .args(&["-device" ,"e1000e,netdev=net1"])
             .arg("-no-reboot")
             .arg("-nographic")
             .optional(&self.smp, |qemu, smp| {
