@@ -35,8 +35,9 @@ impl NvmeInterface{
             irq,
         };
 
-        interface.init(bar,len)?;
+        interface.init(bar,len);
 
+        warn!("new nvme dev init done");
         Ok(interface)
 
     }
@@ -49,7 +50,7 @@ impl NvmeInterface{
     // 第五，添加nvme Controller设备，即/dev/nvme#，提供ioctl接口。这样userspace就可以通过ioctl系统调用发送nvme admin command。
 
     // 参考 linux 5.19  nvme_reset_work    nvme_pci_configure_admin_queue
-    pub fn init(&mut self, bar: usize, len:usize) -> DeviceResult {
+    pub fn init(&mut self, bar: usize, len:usize) {
         
         //第一步在pci扫描到设备时已经完成
 
@@ -58,8 +59,6 @@ impl NvmeInterface{
 
 
         // let q_db = dbs[qid * 2 * db_stride]
-
-
         // admin queue 队列深度 32
         // aqa寄存器高16bit存储cq深度，低16bit存储sq深度
         let aqa_low_16 = 32 as u16;
@@ -71,6 +70,8 @@ impl NvmeInterface{
         unsafe{
             write_volatile(aqa_address as *mut u32, aqa);
         }
+
+
 
         // 将admin queue的sq dma物理地址写入nvme设备上的寄存器ASQ
         let sq_dma_pa = nvme.sq_dma_pa as u32;
@@ -86,9 +87,8 @@ impl NvmeInterface{
             write_volatile(acq_address as *mut u32, cq_dma_pa);
         }
 
-
         //&'static mut [Volatile<u32>]
-        let dev_dbs = (bar + NVME_REG_DBS) as u32 as *mut u32;
+        let dev_dbs = bar + NVME_REG_DBS;
 
     
         //db记录了sq和cq的头和尾指针，高16bit存储sq头指针，低16bit存储cq头指针
@@ -105,10 +105,10 @@ impl NvmeInterface{
 
         // tell the doorbell register tail = 2
         // 写入了2个命令
-        //至此 admin queue初始化完毕
+        // 至此 admin queue初始化完毕
         let admin_q_db = dev_dbs;
         unsafe{
-            write_volatile(admin_q_db, 2)
+            write_volatile(admin_q_db as *mut u32, 2)
         }
 
 
@@ -151,7 +151,7 @@ impl NvmeInterface{
         // let db_bar_size = NvmeRegister::NvmeRegDbs as usize + (num_queues * 8 * db_stride);
 
         
-        Ok(())
+        
     }
 }
 
@@ -169,6 +169,8 @@ impl Scheme for NvmeInterface {
     }
 
     fn handle_irq(&self, irq: usize) {
+
+        warn!("nvme device irq");
         if irq != self.irq {
             // not ours, skip it
             return;
