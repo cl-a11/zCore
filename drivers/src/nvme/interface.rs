@@ -223,13 +223,18 @@ impl BlockScheme for NvmeInterface {
         uboot中对应实现 nvme_setup_prps
         linux中对应实现 nvme_pci_setup_prps
         */
-        let dma_addr = 0;
+
+        // 这里dma addr 就是buffer的地址
+        let ptr = buf.as_mut_ptr() as u64;
+        let dma_addr = ptr;
         let prp1 = dma_addr;
         let prp2 : u64 = 0;
         
         c.prp1 = prp1;
         c.prp2 = prp2;
         c.slba = blkcnt;
+
+
 
         // 把命令写入io queue的sq中
         // self.dev.io_queues[0].sq.write(c);
