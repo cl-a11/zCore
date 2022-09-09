@@ -93,6 +93,7 @@ impl NvmeInterface{
     
         //db记录了sq和cq的头和尾指针，高16bit存储sq头指针，低16bit存储cq头指针
 
+
         /*
         Doorbell  Stride  (DSTRD):  Each  Submission  Queue  and  Completion  Queue  
         Doorbell  register  is  32-bits  in  size
@@ -101,7 +102,6 @@ impl NvmeInterface{
         of 0h indicates a stride of 4 bytes, where the doorbell registers are packed without 
         reserved space between each register. 
         */
-        
 
         // tell the doorbell register tail = 2
         // 写入了2个命令
@@ -308,6 +308,16 @@ impl BlockScheme for NvmeInterface {
 
 
 impl NvmeInterface {
+    pub fn nvme_alloc_io_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
+
+
+
+
+
+        Ok(())
+    }
+
+
     pub fn nvme_alloc_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
         Ok(())
     }
@@ -596,4 +606,18 @@ pub const NVME_REG_DBS:usize	= 0x1000;	/* SQ 0 Tail Doorbell */
 pub struct NvmeCompleteQueue{
     pub byte8_1: u64,
     pub byte8_2: u64,
+}
+
+
+pub fn nvme_init(
+    irq: usize,
+    bar: usize,
+    len: usize,
+) -> DeviceResult<NvmeInterface> {
+
+
+    let nvme_interface = NvmeInterface::new(irq, bar, len)?;
+
+    Ok(nvme_interface)
+
 }

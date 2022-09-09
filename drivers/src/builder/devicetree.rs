@@ -64,7 +64,7 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
 
         // 解析设备树
         self.dt.walk(&mut |node, comp, props| {
-            debug!(
+            warn!(
                 "{MODULE}: parsing node {:?} with compatible {comp:?}",
                 node.name
             );
@@ -81,6 +81,8 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                     dev
                 })
             } else {
+
+                warn!("c {:?}", comp);
                 // parse other device
                 match comp {
                     #[cfg(feature = "virtio")]
@@ -92,6 +94,9 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                     c if c.contains("ns16550a") || c.contains("allwinner,sun20i-uart") => {
                         self.parse_uart(node, comp, props)
                     }
+                    // c if c.contains("pci-host-ecam-generic") => {
+                    //     self.parse_nvme(node, comp, props)
+                    // }
                     _ => Err(DeviceError::NotSupported),
                 }
             };
@@ -104,6 +109,8 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
 
         // 注册中断
         for (device, interrupts_extended) in &dev_list {
+
+            warn!("device: {:?} interrupts_extended: {:#x?}", device, interrupts_extended);
             let mut extended = interrupts_extended.as_slice();
             // 分解 interrupts_extended
             while let [phandle, irq_num, ..] = extended {
@@ -189,6 +196,11 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                 .query_or_map(paddr as usize, size as usize)
                 .ok_or(DeviceError::NoResources)
         })?;
+
+
+        warn!("interrupts_extended: {:?}", interrupts_extended);
+        warn!("base_vaddr: {:#x?}", base_vaddr);
+
         let header = unsafe { &mut *(base_vaddr as *mut VirtIOHeader) };
         if !header.verify() {
             return Err(DeviceError::NotSupported);
@@ -261,6 +273,39 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
             }
             #[cfg(feature = "board-d1")]
             c if c.contains("allwinner,sun20i-uart") => Arc::new(UartAllwinner::new(base_vaddr?)),
+            _ => return Err(DeviceError::NotSupported),
+        });
+
+        Ok((dev, interrupts_extended))
+    }
+
+    /// Parse nodes for UART devices.
+    fn parse_nvme(
+        &self,
+        node: &Node,
+        comp: &StringList,
+        props: &InheritProps,
+    ) -> DeviceResult<DevWithInterrupt> {
+        let interrupts_extended = parse_interrupts(node, props)?;
+        let base_vaddr = parse_reg(node, props).and_then(|(paddr, size)| {
+            self.io_mapper
+                .query_or_map(paddr as usize, size as usize)
+                .ok_or(DeviceError::NoResources)
+        });
+        warn!("NVMe init ...");
+        warn!("interrupts_extended: {:?}", interrupts_extended);
+        warn!("base_vaddr: {:#x?}", base_vaddr.unwrap());
+
+        // let irq_num = interrupts_extended[1];
+        use crate::nvme::*;
+        let dev = Device::Block(
+            match comp {
+            // #[cfg(target_arch = "riscv64")]
+            c if c.contains("pci-host-ecam-generic") => {
+                Arc::new(
+                    nvme_init(0 as usize, 0x40000000, 0x10000)?
+                )
+            }
             _ => return Err(DeviceError::NotSupported),
         });
 

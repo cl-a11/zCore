@@ -154,3 +154,103 @@ struct nvme_bar {
 
 <https://blog.csdn.net/panzhenjie/article/details/51581063>
 <https://nvmexpress.org/developers/nvme-specification/>
+
+
+
+
+        /*
+        Doorbell  Stride  (DSTRD):  Each  Submission  Queue  and  Completion  Queue  
+        Doorbell  register  is  32-bits  in  size
+        This  register  indicates  the  stride  between  
+        doorbell registers. The stride is specified as (2 ^ (2 + DSTRD)) in bytes. A value 
+        of 0h indicates a stride of 4 bytes, where the doorbell registers are packed without 
+        reserved space between each register. 
+        */
+
+
+    loc: Location {
+        bus: 0x0,
+        device: 0x1,
+        function: 0x0,
+    },
+    id: Identifier {
+        vendor_id: 0x1b36,
+        device_id: 0x10,
+        revision_id: 0x2,
+        prog_if: 0x2,
+        class: 0x1,
+        subclass: 0x8,
+    },
+    command: (empty),
+    status: CAPABILITIES_LIST,
+    cache_line_size: 0x0,
+    latency_timer: 0x0,
+    multifunction: false,
+    bist_capable: false,
+    bars: [
+        Some(
+            Memory(
+                0x0,
+                0x3ffe,
+                No,
+                Bits64,
+            ),
+        ),
+        None,
+        None,
+        None,
+        None,
+        None,
+    ],
+    kind: Device(
+        DeviceDetails {
+            cardbus_cis_ptr: 0x0,
+            subsystem_vendor_id: 0x1af4,
+            subsystem_id: 0x1100,
+            expansion_rom_base_addr: 0x0,
+            min_grant: 0x0,
+            max_latency: 0x0,
+        },
+    ),
+    pic_interrupt_line: 0x0,
+    interrupt_pin: Some(
+        INTA,
+    ),
+    cspace_access_method: MemoryMapped(
+        0x0000000030000000,
+    ),
+    capabilities: Some(
+        [
+            Capability {
+                cap_ptr: 0x40,
+                data: MSIX,
+            },
+            Capability {
+                cap_ptr: 0x80,
+                data: EXP(
+                    CapabilityEXPData {
+                        interrupt_message_number: 0x0,
+                        slot_implemented: 0x0,
+                        device_port_type: 0x9,
+                        cap_version: 0x2,
+                    },
+                ),
+            },
+        ],
+    ),
+}
+[  0.356655 WARN  0 0:0 zcore_drivers::bus::pci] Found QEMU NVM Express Controller BARs [
+    Some(
+        Memory(
+            0x0,
+            0x3ffe,
+            No,
+            Bits64,
+        ),
+    ),
+    None,
+    None,
+    None,
+    None,
+    None,
+]

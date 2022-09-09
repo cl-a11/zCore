@@ -98,7 +98,7 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
         // reveal PCI regs by setting paddr
         let bar0_raw = am.read32(ops, loc, BAR0);
         am.write32(ops, loc, BAR0, (paddr & !0xfff) as u32); //Only for 32-bit decoding
-        debug!(
+        warn!(
             "BAR0 set from {:#x} to {:#x}",
             bar0_raw,
             am.read32(ops, loc, BAR0)
@@ -138,7 +138,7 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
 
             // enable MSI interrupt, assuming 64bit for now
             am.write32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP, orig_ctrl | 0x10000);
-            debug!(
+            warn!(
                 "MSI control {:#b}, enabling MSI interrupt {}",
                 orig_ctrl >> 16,
                 irq
