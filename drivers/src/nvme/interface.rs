@@ -71,8 +71,24 @@ impl NvmeInterface{
     // 参考 linux 5.19  nvme_reset_work    nvme_pci_configure_admin_queue
     pub fn init(&mut self, bar: usize, len:usize) {
         
-        info!("nvme init start--bar {:#x?}", bar);
+        info!("nvme init start--bar {:#x?} len {:#x?}", bar, len);
 
+        let cap1:u64 = unsafe {
+            read_volatile(bar as *const u64)
+        };
+
+        
+        
+        let cap2:u64 = unsafe {
+            read_volatile((bar+8) as *const u64)
+        };
+
+
+        info!("nvme cap1 {:#x?}", cap1);
+        info!("nvme cap2 {:#x?}", cap2);
+
+        let cap3 = (cap1 + cap2 << 32) as u64;
+        info!("nvme cap3 {:#x?}", cap3);
 
         let nvme_version = unsafe{
             read_volatile((bar + NVME_REG_VS) as *const u32)
@@ -109,9 +125,11 @@ impl NvmeInterface{
         unsafe{
             write_volatile(aqa_address as *mut u32, aqa);
         }
+        info!("nvme aqa {:#x?} aqa_address {:#x?}", aqa, aqa_address);
 
 
 
+        
         // 将admin queue的sq dma物理地址写入nvme设备上的寄存器ASQ
         let sq_dma_pa = nvme.sq_dma_pa as u32;
         let asq_address = bar + NVME_REG_ASQ ;
@@ -125,7 +143,8 @@ impl NvmeInterface{
         unsafe{
             write_volatile(acq_address as *mut u32, cq_dma_pa);
         }
-
+        
+        // warn!("nvme sq_pa {:#x?} cq_pa {:#x?}", sq_dma_pa, cq_dma_pa);
         //&'static mut [Volatile<u32>]
         let dev_dbs = bar + NVME_REG_DBS;
 

@@ -202,3 +202,7 @@ qemu-system-riscv64 -smp 1 -machine virt -bios default -m 512M -drive file=nvme.
                 };
         };
 };
+
+
+
+0xffffffff6fe00000..0xffffffff7fe00000 => 0x30000000

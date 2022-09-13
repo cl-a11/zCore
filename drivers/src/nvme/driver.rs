@@ -15,6 +15,8 @@ use super::NvmeCompletion;
 pub const NVME_COMMAND_SIZE: usize = 64;
 
 pub const NVME_COMPLETION_SIZE: usize = 16;
+
+#[derive(Debug)]
 pub struct Nvme<P: Provider> {
     header: usize,
     size: usize,
