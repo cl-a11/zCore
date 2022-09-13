@@ -1,4 +1,7 @@
 
+# pci设备
+https://medium.com/@michael2012zhao_67085/understanding-pci-node-in-fdt-769a894a13cc
+
 
 # BAR是pcie设备上的控制器提供给os的一组寄存器.  用来接收命令
 bar
