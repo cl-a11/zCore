@@ -42,6 +42,25 @@ impl NvmeInterface{
 
     }
 
+    pub fn new1() -> DeviceResult<NvmeInterface>{
+
+        let dev = NvmeDev::new(0);
+        let driver = NvmeDriver::new();
+
+        let mut interface = NvmeInterface{
+            name: String::from("nvme"),
+            dev,
+            driver,
+            irq:0,
+        };
+
+        // interface.init(bar,len);
+
+        // warn!("new nvme dev init done");
+        Ok(interface)
+
+    }
+
 
     // 第一，设置映射设备的bar空间到内核的虚拟地址空间当中，通过调用ioremap函数，将Controller的nvme寄存器映射到内核后，可以通过writel, readl这类函数直接读写寄存器。
     // 第二, 完成 DMA mask设置、pci总线中断分配、读取并配置 queue depth、stride 等参数
@@ -52,6 +71,26 @@ impl NvmeInterface{
     // 参考 linux 5.19  nvme_reset_work    nvme_pci_configure_admin_queue
     pub fn init(&mut self, bar: usize, len:usize) {
         
+        info!("nvme init start--bar {:#x?}", bar);
+
+
+        let nvme_version = unsafe{
+            read_volatile((bar + NVME_REG_VS) as *const u32)
+        };
+
+        let nvme_110 = (((1) << 16) | ((1) << 8) | (0));
+        let nvme_120 = (((1) << 16) | ((2) << 8) | (0));
+        let nvme_130 = (((1) << 16) | ((3) << 8) | (0));
+        let nvme_140 = (((1) << 16) | ((4) << 8) | (0));
+
+        warn!("nvme version: {:?}", nvme_version);
+        warn!("nvme version 110: {:?}", nvme_110);
+        warn!("nvme version 120: {:?}", nvme_120);
+        warn!("nvme version 130: {:?}", nvme_130);
+        warn!("nvme version 140: {:?}", nvme_140);
+
+
+
         //第一步在pci扫描到设备时已经完成
 
         //第二步 设置admin queue,包括其需要的CQ和SQ空间和DMA地址
@@ -110,6 +149,32 @@ impl NvmeInterface{
         unsafe{
             write_volatile(admin_q_db as *mut u32, 2)
         }
+        use riscv::asm;
+        unsafe{
+            asm::sfence_vma_all();
+        }
+
+
+        let sq = nvme.sq[0].read();
+        info!("nvme sq[0] :{:#x?}", sq);
+        // let start = 0;
+        // let stop = 
+        // let cq_ptr = NvmeCompletion;
+        loop {
+            let status1 = nvme.cq[0].read();
+            // info!("nvme status1 :{:#x?}", status1);
+
+            if status1.status != 0 {
+                info!("nvme status1 :{:#x?}", status1);
+                break;
+            }
+        }
+        let status2 = nvme.cq[1].read();
+        info!("nvme status2 :{:#x?}", status2);
+
+
+
+
 
 
         //io queue db = dev_dbs[qid * 2 * dev->db_stride]
@@ -149,6 +214,29 @@ impl NvmeInterface{
         // cap = (dev->bar >> 32) & 0xf;
         // */
         // let db_bar_size = NvmeRegister::NvmeRegDbs as usize + (num_queues * 8 * db_stride);
+
+        
+
+
+
+
+
+
+        // let mut cmd = NvmeFeatures::new_admin_set_features();
+        // // cmd.prp1 = 
+        // let q_count = (1 - 1) | ((1 - 1) << 16) as u32;
+        // cmd.fid = NVME_FEAT_NUM_QUEUES;
+        // cmd.dword11 = q_count;
+
+
+        
+        // let z: NvmeCreateSq = unsafe { core::mem::transmute(cmd) };
+
+        // nvme.sq[2].write(z);
+
+
+
+
 
         
         
@@ -401,6 +489,19 @@ pub enum NvmeCommand {
 
 // }
 
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+// 4+4+2+2+2+2
+pub struct NvmeCompletion{
+    pub result: u32,
+    pub rsvd: u32,
+    pub sq_head: u16,
+    pub sq_id: u16,
+    pub command_id: u16,
+    pub status: u16,
+}
+
 // 1+1+2+4*5+8+8+2+2+2+2+4*4 = 64B
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -417,19 +518,21 @@ pub struct NvmeCreateCq{
     pub irq_vector: u16,
     pub rsvd12: [u32;4],
 }
+pub const NVME_CQ_IRQ_ENABLED: u16 = 1 << 1;
 
 impl NvmeCreateCq{
     pub fn new_create_cq_command() -> Self{
+        let flags = NVME_QUEUE_PHYS_CONTIG | NVME_CQ_IRQ_ENABLED;
         NvmeCreateCq{
-            opcode: 0x04,
+            opcode: 0x05,
             flags: 0,
             command_id: 0,
             rsvd1: [0 as u32; 5],
             prp1: 0,
             rsvd8: 0,
             sqid: 0,
-            qsize: 0,
-            cq_flags: 0,
+            qsize: 32,
+            cq_flags: flags,
             irq_vector: 0,
             rsvd12: [0 as u32; 4],
         }
@@ -452,18 +555,24 @@ pub struct NvmeCreateSq{
     pub cqid: u16,
     pub rsvd12: [u32;4],
 }
+
+
+pub const NVME_QUEUE_PHYS_CONTIG: u16 = 1 << 0;
+pub const NVME_SQ_PRIO_MEDIUM: u16 = 2 << 1;
+
 impl NvmeCreateSq{
     pub fn new_create_sq_command() -> Self{
+        let flags = NVME_QUEUE_PHYS_CONTIG | NVME_SQ_PRIO_MEDIUM;
         NvmeCreateSq{
-            opcode: 0x05,
+            opcode: 0x01,
             flags: 0,
             command_id: 0,
             rsvd1: [0 as u32; 5],
             prp1: 0,
             rsvd8: 0,
             sqid: 0,
-            qsize: 0,
-            sq_flags: 0,
+            qsize: 32,
+            sq_flags: flags,
             cqid: 0,
             rsvd12: [0 as u32; 4],
         }
@@ -567,6 +676,36 @@ pub enum NvmeRegister{
 }
 
 
+pub struct NvmeFeatures{
+    opcode: u8,
+    flags: u8,
+    command_id: u16,
+    nsid: u32,
+    rsvd2: [u64;2],
+    prp1: u64,
+    prp2: u64,
+    fid: u32,
+    dword11: u32,
+    rsvd12: [u32;4],
+}
+
+impl NvmeFeatures{
+    pub fn new_admin_set_features() -> Self{
+        Self{
+            opcode: 0x09,
+            flags: 0,
+            command_id: 0,
+            nsid: 0,
+            rsvd2: [0;2],
+            prp1: 0,
+            prp2: 0,
+            fid: 0,
+            dword11: 0,
+            rsvd12: [0;4],
+        }
+    }
+}
+
 
 //NvmeRegister
 pub const NVME_REG_CAP:usize	= 0x0000;	/* Controller Capabilities */
@@ -616,8 +755,19 @@ pub fn nvme_init(
 ) -> DeviceResult<NvmeInterface> {
 
 
-    let nvme_interface = NvmeInterface::new(irq, bar, len)?;
+    let nvme_interface = NvmeInterface::new1()?;
 
     Ok(nvme_interface)
 
 }
+
+
+
+
+
+
+
+
+
+
+pub const NVME_FEAT_NUM_QUEUES: u32 = 0x7;

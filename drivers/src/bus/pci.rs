@@ -90,6 +90,7 @@ impl PortOps for PortOpsImpl {
 /// Enable the pci device and its interrupt
 /// Return assigned MSI interrupt number when applicable
 unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
+    warn!("enable--------------");
     let ops = &PortOpsImpl;
     //let am = CSpaceAccessMethod::IO;
     let am = PCI_ACCESS;
@@ -116,6 +117,8 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
     let mut msi_found = false;
     let mut cap_ptr = am.read8(ops, loc, PCI_CAP_PTR) as u16;
     let mut assigned_irq = None;
+
+    warn!("cap_ptr: {:#x}", cap_ptr);
     while cap_ptr > 0 {
         let cap_id = am.read8(ops, loc, cap_ptr);
         if cap_id == PCI_CAP_ID_MSI {
@@ -145,7 +148,7 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
             );
             msi_found = true;
         }
-        debug!("PCI device has cap id {} at {:#X}", cap_id, cap_ptr);
+        warn!("PCI device has cap id {} at {:#X}", cap_id, cap_ptr);
         cap_ptr = am.read8(ops, loc, cap_ptr + 1) as u16;
     }
 
@@ -153,7 +156,7 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
         // Use PCI legacy interrupt instead
         // IO Space | MEM Space | Bus Mastering | Special Cycles
         am.write32(ops, loc, PCI_COMMAND, (orig | 0xf) as u32);
-        debug!("MSI not found, using PCI interrupt");
+        warn!("MSI not found, using PCI interrupt");
     }
 
     warn!("pci device enable done");

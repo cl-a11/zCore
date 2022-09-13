@@ -8,20 +8,21 @@ use alloc::slice;
 
 use super::NvmeCreateSq;
 use super::NvmeCreateCq;
+use super::NvmeCompletion;
 
 
 // 0x40
 pub const NVME_COMMAND_SIZE: usize = 64;
 
-
+pub const NVME_COMPLETION_SIZE: usize = 16;
 pub struct Nvme<P: Provider> {
     header: usize,
     size: usize,
     provider: PhantomData<P>,
     //  submission queue 每个命令64字节
-    sq: &'static mut[Volatile<NvmeCreateSq>],
+    pub sq: &'static mut[Volatile<NvmeCreateSq>],
     // completion queue 每个命令16字节
-    cq: &'static mut[Volatile<NvmeCreateCq>],
+    pub cq: &'static mut[Volatile<NvmeCompletion>],
     pub sq_dma_pa: usize,
     pub cq_dma_pa: usize,
 
@@ -31,6 +32,7 @@ pub struct Nvme<P: Provider> {
 impl<P: Provider> Nvme<P> {
 
     pub fn new(header:usize, size:usize) -> Self{
+
 
         let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE);
         let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE);
@@ -44,17 +46,17 @@ impl<P: Provider> Nvme<P> {
 
         let complete_queue = unsafe{
             slice::from_raw_parts_mut(
-                cq_va as *mut Volatile<NvmeCreateCq>, 
-                PAGE_SIZE/ NVME_COMMAND_SIZE
+                cq_va as *mut Volatile<NvmeCompletion>, 
+                PAGE_SIZE/ NVME_COMPLETION_SIZE
             )
         };
-
-        let cmd_create_sq = NvmeCreateSq::new_create_sq_command();
-        submit_queue[0].write(cmd_create_sq);
-
+        
         let cmd_create_cq = NvmeCreateCq::new_create_cq_command();
         let z: NvmeCreateSq = unsafe { core::mem::transmute(cmd_create_cq) };
-        submit_queue[1].write(z);
+        submit_queue[0].write(z);
+
+        let cmd_create_sq = NvmeCreateSq::new_create_sq_command();
+        submit_queue[1].write(cmd_create_sq);
 
 
         Nvme{

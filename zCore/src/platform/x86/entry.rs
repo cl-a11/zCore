@@ -21,5 +21,9 @@ pub extern "C" fn _start(boot_info: &'static BootInfo) -> ! {
         ap_fn: crate::secondary_main,
     };
     crate::primary_main(config);
+    warn!("Kernel loop!");
+    loop{
+
+    }
     unreachable!()
 }

@@ -88,7 +88,12 @@ device tree:       {device_tree_paddr:016x}..{:016x}
         phys_to_virt_offset: mem_info.offset(),
         dtb_paddr: device_tree_paddr,
     });
-    sbi_rt::system_reset(sbi_rt::RESET_TYPE_SHUTDOWN, sbi_rt::RESET_REASON_NO_REASON);
+    warn!("Kernel loop!");
+    // sbi_rt::system_reset(sbi_rt::RESET_TYPE_SHUTDOWN, sbi_rt::RESET_REASON_NO_REASON);
+    loop{
+
+    }
+    
     unreachable!()
 }
 
