@@ -147,7 +147,7 @@ impl NvmeInterface{
         // 至此 admin queue初始化完毕
         let admin_q_db = dev_dbs;
         unsafe{
-            write_volatile(admin_q_db as *mut u32, 2)
+            write_volatile(admin_q_db as *mut u32, 0)
         }
         use riscv::asm;
         unsafe{
@@ -161,11 +161,16 @@ impl NvmeInterface{
         // let stop = 
         // let cq_ptr = NvmeCompletion;
         loop {
+            use riscv::asm;
+            unsafe{
+                asm::sfence_vma_all();
+            }
             let status1 = nvme.cq[0].read();
             // info!("nvme status1 :{:#x?}", status1);
 
+            let cq_phase = status1.status & 1;
             if status1.status != 0 {
-                info!("nvme status1 :{:#x?}", status1);
+                info!("nvme status1 :{:#x?} cq_phase :{:#x?}", status1, cq_phase);
                 break;
             }
         }

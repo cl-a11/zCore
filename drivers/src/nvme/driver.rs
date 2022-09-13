@@ -40,22 +40,27 @@ impl<P: Provider> Nvme<P> {
         let submit_queue = unsafe{
             slice::from_raw_parts_mut(
                 sq_va as *mut Volatile<NvmeCreateSq>, 
-                PAGE_SIZE/ NVME_COMMAND_SIZE
+                // PAGE_SIZE/ NVME_COMMAND_SIZE
+                PAGE_SIZE
             )
         };
 
         let complete_queue = unsafe{
             slice::from_raw_parts_mut(
                 cq_va as *mut Volatile<NvmeCompletion>, 
-                PAGE_SIZE/ NVME_COMPLETION_SIZE
+                // PAGE_SIZE/ NVME_COMPLETION_SIZE
+                PAGE_SIZE
             )
         };
         
-        let cmd_create_cq = NvmeCreateCq::new_create_cq_command();
-        let z: NvmeCreateSq = unsafe { core::mem::transmute(cmd_create_cq) };
+        let mut cmd_create_cq = NvmeCreateCq::new_create_cq_command();
+        cmd_create_cq.prp1 = cq_pa as u64;
+        let mut z: NvmeCreateSq = unsafe { core::mem::transmute(cmd_create_cq) };
+
         submit_queue[0].write(z);
 
-        let cmd_create_sq = NvmeCreateSq::new_create_sq_command();
+        let mut cmd_create_sq = NvmeCreateSq::new_create_sq_command();
+        cmd_create_sq.prp1 = sq_pa as u64;
         submit_queue[1].write(cmd_create_sq);
 
 
