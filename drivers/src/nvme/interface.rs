@@ -133,6 +133,7 @@ impl NvmeInterface{
         // 将admin queue的sq dma物理地址写入nvme设备上的寄存器ASQ
         let sq_dma_pa = nvme.sq_dma_pa as u32;
         let asq_address = bar + NVME_REG_ASQ ;
+        info!("nvme asq_address {:#x?} cp_dma_pa {:#x?}", asq_address, sq_dma_pa);
         unsafe{
             write_volatile(asq_address as *mut u32, sq_dma_pa);
         }
@@ -140,6 +141,7 @@ impl NvmeInterface{
         // 将admin queue的cq dma物理地址写入nvme设备上的寄存器ACQ
         let cq_dma_pa = nvme.cq_dma_pa as u32;
         let acq_address = bar + NVME_REG_ACQ;
+        info!("nvme acq_address {:#x?} cp_dma_pa {:#x?}", acq_address, cq_dma_pa);
         unsafe{
             write_volatile(acq_address as *mut u32, cq_dma_pa);
         }
@@ -164,18 +166,22 @@ impl NvmeInterface{
         // tell the doorbell register tail = 2
         // 写入了2个命令
         // 至此 admin queue初始化完毕
+
+        // 0xffffffff7fe01000 -> 0x40001000
         let admin_q_db = dev_dbs;
+        warn!("admin_q_db {:#x?}", admin_q_db);
         unsafe{
-            write_volatile(admin_q_db as *mut u32, 0)
-        }
-        use riscv::asm;
-        unsafe{
-            asm::sfence_vma_all();
+            write_volatile(admin_q_db as *mut u32, 2)
         }
 
 
-        let sq = nvme.sq[0].read();
-        info!("nvme sq[0] :{:#x?}", sq);
+        // use riscv::asm;
+        // unsafe{
+        //     asm::sfence_vma_all();
+        // }
+        // let sq = nvme.sq[0].read();
+        // info!("nvme sq[0] :{:#x?}", sq);
+
         // let start = 0;
         // let stop = 
         // let cq_ptr = NvmeCompletion;

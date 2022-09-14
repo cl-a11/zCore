@@ -94,9 +94,9 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                     c if c.contains("ns16550a") || c.contains("allwinner,sun20i-uart") => {
                         self.parse_uart(node, comp, props)
                     }
-                    // c if c.contains("pci-host-ecam-generic") => {
-                    //     self.parse_nvme(node, comp, props)
-                    // }
+                    c if c.contains("pci-host-ecam-generic") => {
+                        self.parse_nvme(node, comp, props)
+                    }
                     _ => Err(DeviceError::NotSupported),
                 }
             };
@@ -288,6 +288,7 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
     ) -> DeviceResult<DevWithInterrupt> {
         let interrupts_extended = parse_interrupts(node, props)?;
         let base_vaddr = parse_reg(node, props).and_then(|(paddr, size)| {
+
             self.io_mapper
                 .query_or_map(paddr as usize, size as usize)
                 .ok_or(DeviceError::NoResources)
