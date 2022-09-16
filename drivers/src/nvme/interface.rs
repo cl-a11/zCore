@@ -113,11 +113,47 @@ impl NvmeInterface{
         let nvme: Nvme<ProviderImpl> = super::Nvme::new(bar, len);
 
 
+
+
+
+
+        //config admin queue
+
+        let mut cmd_init_identify = NvmeIdentify::new();
+
+        cmd_init_identify.prp1 = nvme.data_dma_pa as u64;
+
+        let mut z = unsafe {
+            core::mem::transmute(cmd_init_identify)
+        };
+
+        nvme.sq[0].write(z);
+
+
+
+
+
+
+
+
+
+        // let mut cmd_create_cq = NvmeCreateCq::new_create_cq_command();
+        // cmd_create_cq.prp1 = nvme.cq_dma_pa as u64;
+        // let mut z: NvmeCreateSq = unsafe { core::mem::transmute(cmd_create_cq) };
+
+        // nvme.sq[0].write(z);
+
+        // let mut cmd_create_sq = NvmeCreateSq::new_create_sq_command();
+        // cmd_create_sq.prp1 = nvme.sq_dma_pa as u64;
+        // nvme.sq[1].write(cmd_create_sq);
+
+
+
         // let q_db = dbs[qid * 2 * db_stride]
-        // admin queue 队列深度 32
+        // admin queue 队列深度 31
         // aqa寄存器高16bit存储cq深度，低16bit存储sq深度
-        let aqa_low_16 = 32 as u16;
-        let aqa_high_16 = 32 as u16;
+        let aqa_low_16 = 31 as u16;
+        let aqa_high_16 = 31 as u16;
         let aqa = (aqa_high_16 as u32) << 16 | aqa_low_16 as u32;
         let aqa_address = bar + NVME_REG_AQA;
 
@@ -150,7 +186,8 @@ impl NvmeInterface{
         //&'static mut [Volatile<u32>]
         let dev_dbs = bar + NVME_REG_DBS;
 
-    
+        
+
         //db记录了sq和cq的头和尾指针，高16bit存储sq头指针，低16bit存储cq头指针
 
 
@@ -171,9 +208,14 @@ impl NvmeInterface{
         let admin_q_db = dev_dbs;
         warn!("admin_q_db {:#x?}", admin_q_db);
         unsafe{
-            write_volatile(admin_q_db as *mut u32, 2)
+            write_volatile(admin_q_db as *mut u32, 1)
         }
 
+        let enable_ctrl = 0x460061;
+
+        unsafe{
+            write_volatile((bar + NVME_REG_CC) as *mut u32, enable_ctrl)
+        }
 
         // use riscv::asm;
         // unsafe{
@@ -542,7 +584,7 @@ pub struct NvmeCreateCq{
     pub rsvd1: [u32;5],
     pub prp1: u64,
     pub rsvd8: u64,
-    pub sqid: u16,
+    pub cqid: u16,
     pub qsize: u16,
     pub cq_flags: u16,
     pub irq_vector: u16,
@@ -553,6 +595,7 @@ pub const NVME_CQ_IRQ_ENABLED: u16 = 1 << 1;
 impl NvmeCreateCq{
     pub fn new_create_cq_command() -> Self{
         let flags = NVME_QUEUE_PHYS_CONTIG | NVME_CQ_IRQ_ENABLED;
+        info!("flags: {:?}", flags);
         NvmeCreateCq{
             opcode: 0x05,
             flags: 0,
@@ -560,9 +603,9 @@ impl NvmeCreateCq{
             rsvd1: [0 as u32; 5],
             prp1: 0,
             rsvd8: 0,
-            sqid: 0,
-            qsize: 32,
-            cq_flags: flags,
+            cqid: 1,
+            qsize: 31,
+            cq_flags: 0x3ff,
             irq_vector: 0,
             rsvd12: [0 as u32; 4],
         }
@@ -593,6 +636,8 @@ pub const NVME_SQ_PRIO_MEDIUM: u16 = 2 << 1;
 impl NvmeCreateSq{
     pub fn new_create_sq_command() -> Self{
         let flags = NVME_QUEUE_PHYS_CONTIG | NVME_SQ_PRIO_MEDIUM;
+        info!("flags: {:?}", flags);
+        info!("flags----: {:?}", 0x3ff);
         NvmeCreateSq{
             opcode: 0x01,
             flags: 0,
@@ -600,9 +645,9 @@ impl NvmeCreateSq{
             rsvd1: [0 as u32; 5],
             prp1: 0,
             rsvd8: 0,
-            sqid: 0,
+            sqid: 1,
             qsize: 32,
-            sq_flags: flags,
+            sq_flags: 0x3ff,
             cqid: 0,
             rsvd12: [0 as u32; 4],
         }
@@ -801,3 +846,43 @@ pub fn nvme_init(
 
 
 pub const NVME_FEAT_NUM_QUEUES: u32 = 0x7;
+
+
+// 1+1+2+4+8+8+8+8+1+1+2+1+1+1+1+4+4+4+4 = 64 bytes
+#[repr(C)]
+#[derive(Debug, Clone, Copy)]
+pub struct NvmeIdentify{
+    opcode: u8,
+    flags: u8,
+    command_id: u16,
+    nsid: u32,
+    rsvd2: [u64;2],
+    prp1:u64,
+    prp2:u64,
+    cns: u8,
+    rsvd3: u8,
+    ctrlid: u16,
+    rsvd11: [u8;3],
+    csi: u8,
+    rsvd12: [u32;4],
+}
+
+impl NvmeIdentify{
+    pub fn new() -> Self{
+        Self{
+            opcode: 0x06,
+            flags: 0,
+            command_id: 1018,
+            nsid: 0,
+            rsvd2: [0;2],
+            prp1: 0,
+            prp2: 0,
+            cns: 1,
+            rsvd3: 0,
+            ctrlid: 0,
+            rsvd11: [0;3],
+            csi: 0,
+            rsvd12: [0;4],
+        }
+    }
+}
