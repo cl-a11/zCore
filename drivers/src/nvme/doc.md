@@ -169,3 +169,35 @@ doorbell registers. The stride is specified as (2 ^ (2 + DSTRD)) in bytes. A val
 of 0h indicates a stride of 4 bytes, where the doorbell registers are packed without 
 reserved space between each register. 
 */
+
+
+
+
+
+
+
+
+
+
+pci_register_host_bridge
+
+    --pci_setup_device
+
+
+
+
+pci_assign_resource
+--------pci_scan_device--------
+[    0.336150] pci_scan_child_bus_extend scanning bus
+
+
+
+pci_assign_resource
+
+_pci_assign_resource
+
+__pci_assign_resource
+
+
+assign_requested_resources_sorted
+bus_for_each_dev

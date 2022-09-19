@@ -23,10 +23,7 @@ pub struct NvmeDev{
     pub bar: usize,
 
     // pub cap: usize,
-
     // pub dbs: usize,
-
-
 }
 
 

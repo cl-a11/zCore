@@ -1,7 +1,12 @@
 qemu-system-riscv64 -smp 1 -machine virt -bios default -m 512M -no-reboot -serial mon:stdio -serial file:/tmp/serial.out -kernel target/riscv64/release/zcore.bin -initrd zCore/riscv64.img -append "LOG=warn" -drive file=nvme.img,if=none,id=nvm -device nvme,serial=xxxxx,drive=nvm
 
- 
 
+
+qemu-system-riscv64 -smp 1 -machine virt -bios default -m 512M -no-reboot -serial mon:stdio -serial file:/tmp/serial.out -kernel target/riscv64/release/zcore.bin -initrd zCore/riscv64.img -append "LOG=warn" -drive file=nvme.img,if=none,id=nvm -device nvme,serial=xxxxx,drive=nvm
+ -netdev user,id=net1,hostfwd=tcp::8000-:80,hostfwd=tcp::2222-:2222,hostfwd=udp::6969-:6969 -device e1000e,netdev=net1
+
+ 
+qemu-system-riscv64 -M virt -bios /home/y/buildroot/output/images/fw_jump.elf -kernel /home/y/buildroot/output/images/Image -append "rootwait root=/dev/vda ro" -drive file=/home/y/buildroot/output/images/rootfs.ext2,format=raw,id=hd0 -device virtio-blk-device,drive=hd0 -nographic -drive file=/home/y/buildroot/nvme.img,if=none,id=nvm -device nvme,serial=xxxxx,drive=nvm
 
 qemu-system-riscv64 -smp 1 -machine virt -bios default -m 512M -no-reboot -serial mon:stdio -serial file:/tmp/serial.out -kernel target/riscv64/release/zcore.bin -initrd zCore/riscv64.img -append "LOG=warn" -drive file=nvme.img,if=none,id=nvm -device nvme,serial=xxxxx,drive=nvm dumpdtb=./virt.dtb
 
@@ -9,6 +14,25 @@ qemu-system-riscv64 -smp 1 -machine virt -bios default -m 512M -no-reboot -seria
 
 
 qemu-system-riscv64 -smp 1 -machine virt -bios default -m 512M -drive file=nvme.img,if=none,id=nvm -device nvme,serial=xxxxx,drive=nvm -netdev tap,id=net1,script=ifup.sh,downscript=none -machine dumpdtb=./1.dtb
+
+
+
+
+
+(qemu) info pci
+  Bus  0, device   0, function 0:
+    Host bridge: PCI device 1b36:0008
+      PCI subsystem 1af4:1100
+      id ""
+  Bus  0, device   1, function 0:
+    Class 0264: PCI device 1b36:0010
+      PCI subsystem 1af4:1100
+      IRQ 15, pin A
+      BAR0: 64 bit memory at 0x400000000 [0x400003fff].
+      id ""
+
+
+
 
 /dts-v1/;
 

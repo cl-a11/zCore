@@ -124,20 +124,7 @@ impl NvmeInterface{
         let mut z = unsafe {
             core::mem::transmute(cmd_init_identify)
         };
-
         nvme.sq[0].write(z);
-
-
-
-
-
-
-
-
-
-
-
-
 
         // let q_db = dbs[qid * 2 * db_stride]
         // admin queue 队列深度 31
@@ -310,13 +297,6 @@ impl NvmeInterface{
 }
 
 
-
-
-
-
-
-
-
 impl Scheme for NvmeInterface {
     fn name(&self) -> &str {
         "nvme"
@@ -325,11 +305,11 @@ impl Scheme for NvmeInterface {
     fn handle_irq(&self, irq: usize) {
 
         warn!("nvme device irq");
-        if irq != self.irq {
-            // not ours, skip it
-            return;
-        }
-        let data = self.driver.handle_interrupt();
+        // if irq != self.irq {
+        //     // not ours, skip it
+        //     return;
+        // }
+        // let data = self.driver.handle_interrupt();
 
     }
 }
