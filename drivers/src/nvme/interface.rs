@@ -105,8 +105,6 @@ impl NvmeInterface{
         warn!("nvme version 130: {:?}", nvme_130);
         warn!("nvme version 140: {:?}", nvme_140);
 
-
-
         //第一步在pci扫描到设备时已经完成
 
         //第二步 设置admin queue,包括其需要的CQ和SQ空间和DMA地址
@@ -137,15 +135,7 @@ impl NvmeInterface{
 
 
 
-        // let mut cmd_create_cq = NvmeCreateCq::new_create_cq_command();
-        // cmd_create_cq.prp1 = nvme.cq_dma_pa as u64;
-        // let mut z: NvmeCreateSq = unsafe { core::mem::transmute(cmd_create_cq) };
 
-        // nvme.sq[0].write(z);
-
-        // let mut cmd_create_sq = NvmeCreateSq::new_create_sq_command();
-        // cmd_create_sq.prp1 = nvme.sq_dma_pa as u64;
-        // nvme.sq[1].write(cmd_create_sq);
 
 
 
@@ -155,6 +145,7 @@ impl NvmeInterface{
         let aqa_low_16 = 31 as u16;
         let aqa_high_16 = 31 as u16;
         let aqa = (aqa_high_16 as u32) << 16 | aqa_low_16 as u32;
+        let aqa = 0x1f001f;
         let aqa_address = bar + NVME_REG_AQA;
 
         // 将admin queue配置信息写入nvme设备寄存器AQA, admin_queue_attributes
@@ -169,7 +160,7 @@ impl NvmeInterface{
         // 将admin queue的sq dma物理地址写入nvme设备上的寄存器ASQ
         let sq_dma_pa = nvme.sq_dma_pa as u32;
         let asq_address = bar + NVME_REG_ASQ ;
-        info!("nvme asq_address {:#x?} cp_dma_pa {:#x?}", asq_address, sq_dma_pa);
+        info!("nvme asq_address {:#x?} sq_dma_pa {:#x?}", asq_address, sq_dma_pa);
         unsafe{
             write_volatile(asq_address as *mut u32, sq_dma_pa);
         }
@@ -177,7 +168,7 @@ impl NvmeInterface{
         // 将admin queue的cq dma物理地址写入nvme设备上的寄存器ACQ
         let cq_dma_pa = nvme.cq_dma_pa as u32;
         let acq_address = bar + NVME_REG_ACQ;
-        info!("nvme acq_address {:#x?} cp_dma_pa {:#x?}", acq_address, cq_dma_pa);
+        info!("nvme acq_address {:#x?} cq_dma_pa {:#x?}", acq_address, cq_dma_pa);
         unsafe{
             write_volatile(acq_address as *mut u32, cq_dma_pa);
         }
@@ -200,23 +191,24 @@ impl NvmeInterface{
         reserved space between each register. 
         */
 
-        // tell the doorbell register tail = 2
-        // 写入了2个命令
-        // 至此 admin queue初始化完毕
+        let enable_ctrl = 0x460061;        
+        unsafe{
+            write_volatile((bar + NVME_REG_CC) as *mut u32, enable_ctrl)
+        }
+        
+        let dev_status = unsafe {
+            read_volatile((bar + NVME_REG_CSTS) as *mut u32)
+        };
 
-        // 0xffffffff7fe01000 -> 0x40001000
+        info!("nvme dev_status {:#x?}", dev_status);
+
+        
+
         let admin_q_db = dev_dbs;
         warn!("admin_q_db {:#x?}", admin_q_db);
         unsafe{
             write_volatile(admin_q_db as *mut u32, 1)
         }
-
-        let enable_ctrl = 0x460061;
-
-        unsafe{
-            write_volatile((bar + NVME_REG_CC) as *mut u32, enable_ctrl)
-        }
-
         // use riscv::asm;
         // unsafe{
         //     asm::sfence_vma_all();
@@ -228,25 +220,27 @@ impl NvmeInterface{
         // let stop = 
         // let cq_ptr = NvmeCompletion;
         loop {
-            use riscv::asm;
-            unsafe{
-                asm::sfence_vma_all();
-            }
             let status1 = nvme.cq[0].read();
-            // info!("nvme status1 :{:#x?}", status1);
-
-            let cq_phase = status1.status & 1;
-            if status1.status != 0 {
-                info!("nvme status1 :{:#x?} cq_phase :{:#x?}", status1, cq_phase);
+            // let cq_phase = status1.status & 1;
+            if status1.status != 0 || status1.result != 0 || status1.sq_head != 0 || status1.sq_id != 0 || status1.command_id != 0 {
+                info!("nvme cq1 :{:#x?}", status1);
                 break;
             }
         }
-        let status2 = nvme.cq[1].read();
-        info!("nvme status2 :{:#x?}", status2);
 
 
 
 
+
+        // let mut cmd_create_cq = NvmeCreateCq::new_create_cq_command();
+        // cmd_create_cq.prp1 = nvme.cq_dma_pa as u64;
+        // let mut z: NvmeCreateSq = unsafe { core::mem::transmute(cmd_create_cq) };
+
+        // nvme.sq[0].write(z);
+
+        // let mut cmd_create_sq = NvmeCreateSq::new_create_sq_command();
+        // cmd_create_sq.prp1 = nvme.sq_dma_pa as u64;
+        // nvme.sq[1].write(cmd_create_sq);
 
 
         //io queue db = dev_dbs[qid * 2 * dev->db_stride]
@@ -872,7 +866,7 @@ impl NvmeIdentify{
         Self{
             opcode: 0x06,
             flags: 0,
-            command_id: 1018,
+            command_id: 0x101c,
             nsid: 0,
             rsvd2: [0;2],
             prp1: 0,
