@@ -3,7 +3,7 @@ use alloc::vec::Vec;
 use core::mem::size_of;
 use core::ptr::{read_volatile, write_volatile};
 
-use crate::scheme::{BlockScheme, Scheme};
+use crate::scheme::{BlockScheme, Scheme, IrqScheme};
 use crate::DeviceResult;
 
 use super::dev::*;
@@ -71,6 +71,8 @@ impl NvmeInterface{
     // 参考 linux 5.19  nvme_reset_work    nvme_pci_configure_admin_queue
     pub fn init(&mut self, bar: usize, len:usize) {
         
+        
+
         info!("nvme init start--bar {:#x?} len {:#x?}", bar, len);
 
         let cap1:u64 = unsafe {
@@ -206,10 +208,11 @@ impl NvmeInterface{
         // let start = 0;
         // let stop = 
         // let cq_ptr = NvmeCompletion;
+
         loop {
             let status1 = nvme.cq[0].read();
             // let cq_phase = status1.status & 1;
-            if status1.status != 0 || status1.result != 0 || status1.sq_head != 0 || status1.sq_id != 0 || status1.command_id != 0 {
+            if status1.status != 0{
                 info!("nvme cq1 :{:#x?}", status1);
                 break;
             }
@@ -287,12 +290,6 @@ impl NvmeInterface{
 
         // nvme.sq[2].write(z);
 
-
-
-
-
-        
-        
     }
 }
 
@@ -304,7 +301,7 @@ impl Scheme for NvmeInterface {
 
     fn handle_irq(&self, irq: usize) {
 
-        warn!("nvme device irq");
+        warn!("---------nvme device irq-------------");
         // if irq != self.irq {
         //     // not ours, skip it
         //     return;
@@ -860,3 +857,50 @@ impl NvmeIdentify{
         }
     }
 }
+
+
+
+use crate::prelude::IrqHandler;
+use crate::{utils::IrqManager, DeviceError};
+
+
+// impl IrqScheme for NvmeInterface{
+
+//     // fn is_valid_irq(&self, irq_num: usize) -> bool {
+//     //     IRQ_RANGE.contains(&irq_num)
+//     // }
+
+//     // fn mask(&self, irq_num: usize) -> DeviceResult {
+//     //     if self.is_valid_irq(irq_num) {
+//     //         self.inner.lock().toggle(irq_num, false);
+//     //         Ok(())
+//     //     } else {
+//     //         Err(DeviceError::InvalidParam)
+//     //     }
+//     // }
+
+//     // fn unmask(&self, irq_num: usize) -> DeviceResult {
+//     //     if self.is_valid_irq(irq_num) {
+//     //         self.inner.lock().toggle(irq_num, true);
+//     //         Ok(())
+//     //     } else {
+//     //         Err(DeviceError::InvalidParam)
+//     //     }
+//     // }
+
+//     // fn register_handler(&self, irq_num: usize, handler: IrqHandler) -> DeviceResult {
+//     //     let mut inner = self.inner.lock();
+//     //     inner.manager.register_handler(irq_num, handler).map(|_| {
+//     //         inner.set_priority(irq_num, 7);
+//     //     })
+//     // }
+
+//     // fn unregister(&self, irq_num: usize) -> DeviceResult {
+//     //     self.inner.lock().manager.unregister_handler(irq_num)
+//     // }
+
+//     // fn init_hart(&self) {
+//     //     self.inner.lock().init_hart();
+//     // }
+
+// }

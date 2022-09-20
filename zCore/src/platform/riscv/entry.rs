@@ -90,9 +90,9 @@ device tree:       {device_tree_paddr:016x}..{:016x}
     });
     warn!("Kernel loop!");
     // sbi_rt::system_reset(sbi_rt::RESET_TYPE_SHUTDOWN, sbi_rt::RESET_REASON_NO_REASON);
-    loop{
+    // loop{
 
-    }
+    // }
     
     unreachable!()
 }

@@ -201,3 +201,7 @@ __pci_assign_resource
 
 assign_requested_resources_sorted
 bus_for_each_dev
+__assign_resources_sorted
+
+
+pci_assign_irq

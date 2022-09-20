@@ -16,7 +16,7 @@ hal_fn_impl! {
         }
 
         fn handle_irq(cause: usize) {
-            warn!("Handle irq cause: {}", cause);
+            trace!("Handle irq cause: {}", cause);
             crate::drivers::all_irq().first_unwrap().handle_irq(cause)
         }
 
@@ -26,7 +26,7 @@ hal_fn_impl! {
 
         fn intr_off() {
             unsafe { sstatus::clear_sie() };
-        }
+        }handle kernel timeout
 
         fn intr_get() -> bool {
             sstatus::read().sie()

@@ -135,6 +135,7 @@ where
     }
 
     fn handle_irq(&self, _irq_num: usize) {
+        warn!("uart16550-mmio: irq");
         self.listener.trigger(());
     }
 }

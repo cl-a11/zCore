@@ -62,6 +62,10 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
         let mut intc_map = BTreeMap::new(); // phandle -> intc
         let mut dev_list = Vec::new(); // devices
 
+
+
+        let mut is_nvme = false;
+
         // 解析设备树
         self.dt.walk(&mut |node, comp, props| {
             warn!(
@@ -95,6 +99,7 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                         self.parse_uart(node, comp, props)
                     }
                     c if c.contains("pci-host-ecam-generic") => {
+                        is_nvme = true;
                         self.parse_nvme(node, comp, props)
                     }
                     _ => Err(DeviceError::NotSupported),
@@ -107,32 +112,59 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
             }
         });
 
+        warn!("dev_list {:?}", dev_list);
         // 注册中断
         for (device, interrupts_extended) in &dev_list {
 
             warn!("device: {:?} interrupts_extended: {:#x?}", device, interrupts_extended);
-            let mut extended = interrupts_extended.as_slice();
-            // 分解 interrupts_extended
-            while let [phandle, irq_num, ..] = extended {
-                if let Some(Intc { index, cells }) = intc_map.get(phandle) {
-                    let (intc, _) = &dev_list[*index];
-                    extended = &extended[1 + cells..];
-                    if let Device::Irq(irq) = intc {
-                        if *irq_num != 0xffff_ffff {
-                            info!("{MODULE}: register interrupts for {intc:?}: {device:?}, irq_num={irq_num}");
-                            if irq.register_device(*irq_num as _, device.inner()).is_ok() {
-                                irq.unmask(*irq_num as _)?;
+            
+            
+
+
+
+            if is_nvme {
+
+                
+                
+            let (intc, _) = &dev_list[2];
+            if let Device::Irq(irq) = intc {
+                info!("{MODULE}: register interrupts for {intc:?}: {device:?}, irq_num={:?}", 0xf);
+                if irq.register_device(0xf, device.inner()).is_ok() {
+                    irq.unmask(0xf)?;
+                }
+
+            }
+                
+            }else{
+                let mut extended = interrupts_extended.as_slice();
+                // 分解 interrupts_extended
+                while let [phandle, irq_num, ..] = extended {
+                    if let Some(Intc { index, cells }) = intc_map.get(phandle) {
+
+                        warn!("index: {:#x?} cells: {:#x?}", index, cells);
+                        let (intc, _) = &dev_list[*index];
+
+
+
+                        warn!("intc: {:?} cells: {:#x?}", intc, cells);
+                        extended = &extended[1 + cells..];
+                        if let Device::Irq(irq) = intc {
+                            if *irq_num != 0xffff_ffff {
+                                info!("{MODULE}: register interrupts for {intc:?}: {device:?}, irq_num={irq_num}");
+                                if irq.register_device(*irq_num as _, device.inner()).is_ok() {
+                                    irq.unmask(*irq_num as _)?;
+                                }
                             }
+                        } else {
+                            warn!("{MODULE}: node with phandle {phandle:#x} is not an interrupt-controller");
+                            return Err(DeviceError::InvalidParam);
                         }
                     } else {
-                        warn!("{MODULE}: node with phandle {phandle:#x} is not an interrupt-controller");
+                        warn!(
+                            "{MODULE}: no such node with phandle {phandle:#x} as the interrupt-parent"
+                        );
                         return Err(DeviceError::InvalidParam);
                     }
-                } else {
-                    warn!(
-                        "{MODULE}: no such node with phandle {phandle:#x} as the interrupt-parent"
-                    );
-                    return Err(DeviceError::InvalidParam);
                 }
             }
         }
@@ -304,7 +336,7 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
             // #[cfg(target_arch = "riscv64")]
             c if c.contains("pci-host-ecam-generic") => {
                 Arc::new(
-                    nvme_init(0 as usize, 0x40000000, 0x10000)?
+                    nvme_init(0xf as usize, 0x40000000, 0x10000)?
                 )
             }
             _ => return Err(DeviceError::NotSupported),

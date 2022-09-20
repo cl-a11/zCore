@@ -126,6 +126,8 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
             // The manual Volume 3 Chapter 10.11 Message Signalled Interrupts
             // 0 is (usually) the apic id of the bsp.
             //am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000 | (0 << 12));
+            info!("catptr + PCI_MSI_ADDR {:#x}", cap_ptr + PCI_MSI_ADDR);
+
             am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000);
             MSI_IRQ += 1;
             let irq = MSI_IRQ;
@@ -154,8 +156,11 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
 
     if !msi_found {
         // Use PCI legacy interrupt instead
-        // IO Space | MEM Space | Bus Mastering | Special Cycles
-        am.write32(ops, loc, PCI_COMMAND, (orig | 0xf) as u32);
+        // IO Space | MEM Space | Bus Mastering | Special Cycles 
+        // am.write32(ops, loc, PCI_COMMAND, (orig | 0xf) as u32);
+        info!("-------------PCI device enable interrupt-------------");
+        am.write32(ops, loc, _PCI_INTERRUPT_LINE, 0xf as u32);
+
         warn!("MSI not found, using PCI interrupt");
     }
 
@@ -208,7 +213,7 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 let dev = Device::Block(
                     Arc::new(
                         crate::nvme::NvmeInterface::new(
-                            irq.unwrap_or(0),
+                            irq.unwrap_or(15),
                             vaddr,
                             len as usize,
                         )?
@@ -235,7 +240,7 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 let dev = Device::Block(
                     Arc::new(
                         crate::nvme::NvmeInterface::new(
-                            irq.unwrap_or(0),
+                            irq.unwrap_or(15),
                             vaddr,
                             len as usize,
                         )?

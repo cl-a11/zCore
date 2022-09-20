@@ -55,12 +55,14 @@ pub(super) fn init() -> DeviceResult {
             .build()?;
     // add drivers
     for dev in dev_list.into_iter() {
+        info!("add device: {:?}", dev);
         if let Device::Uart(uart) = dev {
             drivers::add_device(Device::Uart(BufferedUart::new(uart)));
         } else {
             drivers::add_device(dev);
         }
     }
+    
 
     #[cfg(not(any(feature = "loopback", feature = "board-d1")))]
     {
@@ -72,7 +74,6 @@ pub(super) fn init() -> DeviceResult {
         }
     }
 
-    intc_init()?;
 
     #[cfg(feature = "graphic")]
     if let Some(display) = drivers::all_display().first() {
@@ -93,21 +94,38 @@ pub(super) fn init() -> DeviceResult {
 }
 
 pub(super) fn intc_init() -> DeviceResult {
+    info!("intc_init--------");
     let irq = drivers::all_irq()
         .find(format!("riscv-intc-cpu{}", crate::cpu::cpu_id()).as_str())
         .expect("IRQ device 'riscv-intc' not initialized!");
+    
     // register soft interrupts handler
     irq.register_handler(
         ScauseIntCode::SupervisorSoft as _,
         Box::new(super::trap::super_soft),
     )?;
+
     // register timer interrupts handler
     irq.register_handler(
         ScauseIntCode::SupervisorTimer as _,
         Box::new(super::trap::super_timer),
     )?;
+
+
+    
+    
     irq.unmask(ScauseIntCode::SupervisorSoft as _)?;
     irq.unmask(ScauseIntCode::SupervisorTimer as _)?;
-
+    
+    // let nvme = drivers::all_irq()
+    // .find(format!("nvme").as_str())
+    // .expect("IRQ device 'riscv-intc' not initialized!");
+    
+    // nvme.register_handler(
+    //     ScauseIntCode::SupervisorExternal as _,
+    //     Box::new(super::trap::super_external),
+    // )?;
+    // nvme.unmask(ScauseIntCode::SupervisorExternal as _)?;
+    
     Ok(())
 }

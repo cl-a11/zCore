@@ -99,6 +99,8 @@ pub fn primary_init_early() {
 }
 
 pub fn primary_init() {
+    sbi_rt::legacy::clear_ipi();
+    info!("Interrupt::SupervisorSoft!");
     vm::init();
     drivers::init().unwrap();
     // We should set first time interrupt before run into first user program
