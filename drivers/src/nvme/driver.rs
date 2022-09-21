@@ -3,11 +3,7 @@ use volatile::Volatile;
 use alloc::slice;
 
 
-
-
-
-use super::NvmeCreateSq;
-use super::NvmeCreateCq;
+use super::NvmeCommonCommand;
 use super::NvmeCompletion;
 
 
@@ -22,12 +18,14 @@ pub struct Nvme<P: Provider> {
     size: usize,
     provider: PhantomData<P>,
     //  submission queue 每个命令64字节
-    pub sq: &'static mut[Volatile<NvmeCreateSq>],
+    pub sq: &'static mut[Volatile<NvmeCommonCommand>],
     // completion queue 每个命令16字节
     pub cq: &'static mut[Volatile<NvmeCompletion>],
     pub sq_dma_pa: usize,
     pub cq_dma_pa: usize,
     pub data_dma_pa: usize,
+    pub sq_va: usize,
+    pub cq_va: usize,
 
     // registers: &'static mut [Volatile<u32>],
 }
@@ -36,9 +34,9 @@ impl<P: Provider> Nvme<P> {
 
     pub fn new(header:usize, size:usize) -> Self{
 
-        let (data_va, data_pa) = P::alloc_dma(P::PAGE_SIZE);
-        let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE);
-        let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE);
+        let (data_va, data_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
+        let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
+        let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
 
 
 
@@ -46,7 +44,7 @@ impl<P: Provider> Nvme<P> {
 
         let submit_queue = unsafe{
             slice::from_raw_parts_mut(
-                sq_va as *mut Volatile<NvmeCreateSq>, 
+                sq_va as *mut Volatile<NvmeCommonCommand>, 
                 PAGE_SIZE
             )
         };
@@ -71,6 +69,8 @@ impl<P: Provider> Nvme<P> {
             sq_dma_pa: sq_pa,
             cq_dma_pa: cq_pa,
             data_dma_pa: data_pa,
+            sq_va: sq_va,
+            cq_va: cq_va,
         }
     
     }
