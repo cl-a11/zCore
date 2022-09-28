@@ -148,7 +148,7 @@ impl QemuArgs {
             .arg("-no-reboot")
             .arg("-nographic")
             .optional(&self.smp, |qemu, smp| {
-                qemu.args(&["-smp", &smp.to_string()]);
+                qemu.args(&["-smp", "1"]);
             });
         match arch {
             Arch::Riscv64 => {

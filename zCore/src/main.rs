@@ -37,10 +37,42 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 
-    let irq = kernel_hal::drivers::all_irq().find("riscv-intc-cpu0").unwrap();
 
+
+
+    //register irq for nvme
+    use alloc::boxed::Box;
+    let irq = kernel_hal::drivers::all_irq().find("riscv-plic").unwrap();
+
+    let nvme1 = kernel_hal::drivers::all_block()
+    .find("real_nvme")
+    .unwrap();
+    irq.unmask(15);
+    irq.register_handler(15, Box::new(move || nvme1.handle_irq(15)));
+
+    // irq.unmask(33);
+    // irq.register_handler(33, Box::new(move || nvme1.handle_irq(33)));
+
+    
+    
+    
+    
+    
+    warn!("test nvme rw");
+    let nvme2 = kernel_hal::drivers::all_block()
+    .find("real_nvme")
+    .unwrap();
+    
+    let write_buf:&[u8] = &[1,2,3,4,5,6,7,8,9,10];
+    nvme2.write_block(1, &write_buf);
+
+    let mut read_buf = [0u8; 10];
+
+    nvme2.read_block(1, &mut read_buf);
+
+    warn!("read_buf: {:?}", read_buf);
+    
     warn!("Kernel loop!");
-
     loop{
         
     }

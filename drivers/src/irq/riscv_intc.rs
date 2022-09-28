@@ -10,7 +10,7 @@ use core::sync::atomic::{AtomicU8, Ordering};
 
 const S_SOFT: usize = 1;
 const S_TIMER: usize = 5;
-const S_EXT: usize = 9;
+const S_EXT: usize = 8;
 
 static INTC_NUM: AtomicU8 = AtomicU8::new(0);
 
@@ -26,6 +26,7 @@ pub struct Intc {
     soft_handler: Mutex<Option<IrqHandler>>,
     timer_handler: Mutex<Option<IrqHandler>>,
     ext_handler: Mutex<Option<IrqHandler>>,
+    foo_handler: Mutex<Option<IrqHandler>>,
 }
 
 impl Intc {
@@ -35,6 +36,7 @@ impl Intc {
             soft_handler: Mutex::new(None),
             timer_handler: Mutex::new(None),
             ext_handler: Mutex::new(None),
+            foo_handler: Mutex::new(None),
         }
     }
 
@@ -47,8 +49,9 @@ impl Intc {
             S_TIMER => op(&mut self.timer_handler.lock()),
             S_EXT => op(&mut self.ext_handler.lock()),
             _ => {
-                error!("invalid SCAUSE value {:#x}!", cause);
-                Err(DeviceError::InvalidParam)
+                op(&mut self.foo_handler.lock())
+                // error!("invalid SCAUSE value {:#x}!", cause);
+                // Err(DeviceError::InvalidParam)
             }
         }
     }

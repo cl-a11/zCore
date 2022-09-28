@@ -70,6 +70,7 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
             );
             // parse interrupt controller
             let res = if node.has_prop("interrupt-controller") {
+                info!("found interrupt controller");
                 self.parse_intc(node, comp, props).map(|(dev, intc)| {
                     intc_map.insert(
                         intc.phandle,
@@ -92,9 +93,9 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                     c if c.contains("ns16550a") || c.contains("allwinner,sun20i-uart") => {
                         self.parse_uart(node, comp, props)
                     }
-                    c if c.contains("pci-host-ecam-generic") => {
-                        self.parse_nvme(node, comp, props)
-                    }
+                    // c if c.contains("riscv,plic0") => {
+                    //     self.parse_plic(node, comp, props)
+                    // }
                     _ => Err(DeviceError::NotSupported),
                 }
             };
@@ -167,7 +168,10 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
             #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
             c if c.contains("riscv,cpu-intc") => Arc::new(riscv::Intc::new()),
             #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-            c if c.contains("riscv,plic0") => Arc::new(riscv::Plic::new(base_vaddr?)),
+            c if c.contains("riscv,plic0") => {
+                info!("found PLIC");
+                Arc::new(riscv::Plic::new(base_vaddr?))
+            }
             _ => return Err(DeviceError::NotSupported),
         });
 

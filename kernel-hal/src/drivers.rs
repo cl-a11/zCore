@@ -79,6 +79,10 @@ impl AllDeviceList {
             Device::Uart(d) => self.uart.add(d),
         }
     }
+
+    // pub fn add_blk_device(&self, dev: Arc<dyn BlockScheme>) {
+    //     self.block.add(dev);
+    // }
 }
 
 lazy_static! {
@@ -88,6 +92,10 @@ lazy_static! {
 pub(crate) fn add_device(dev: Device) {
     DEVICES.add_device(dev)
 }
+
+// pub(crate) fn add_blk_device(dev: Arc<dyn BlockScheme>) {
+//     DEVICES.add_blk_device(dev)
+// }
 
 /// Returns all devices which implement the [`BlockScheme`].
 pub fn all_block() -> &'static DeviceList<dyn BlockScheme> {

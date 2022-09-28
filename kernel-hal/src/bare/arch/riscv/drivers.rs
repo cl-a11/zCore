@@ -68,8 +68,17 @@ pub(super) fn init() -> DeviceResult {
         use zcore_drivers::bus::pci;
         let pci_devs = pci::init(Some(Arc::new(IoMapperImpl)))?;
         for d in pci_devs.into_iter() {
+            warn!("add device: {:?}", d);
             drivers::add_device(d);
         }
+        // for d in pci_devs.into_iter() {
+
+        //     if let Device::Block(blk) = d {
+        //         drivers::add_blk_device(blk);
+        //     } else {
+        //         drivers::add_device(d);
+        //     }
+        // }
     }
 
     intc_init()?;

@@ -37,7 +37,7 @@ impl NvmeInterface{
         let nvme: Arc<Mutex<Nvme<ProviderImpl>>> = Arc::new(Mutex::new(super::Nvme::new()));
 
         let mut interface = NvmeInterface{
-            name: String::from("nvme"),
+            name: String::from("real_nvme"),
             dev,
             nvme: nvme,
             irq,
@@ -55,8 +55,8 @@ impl NvmeInterface{
         let dev = NvmeDev::new(0);
         let nvme: Arc<Mutex<Nvme<ProviderImpl>>> = Arc::new(Mutex::new(super::Nvme::new()));
 
-        let mut interface = NvmeInterface{
-            name: String::from("nvme"),
+        let interface = NvmeInterface{
+            name: String::from("fake_nvme"),
             dev,
             nvme:nvme,
             irq:0,
@@ -81,11 +81,6 @@ impl NvmeInterface{
 
     }
 }
-
-
-
-
-
 
 impl NvmeInterface {
 
@@ -295,8 +290,6 @@ impl NvmeInterface {
     // }
 }
 
-
-
 impl BlockScheme for NvmeInterface {
     
     // 每个NVMe命令中有两个域：PRP1和PRP2，Host就是通过这两个域告诉SSD数据在内存中的位置或者数据需要写入的地址
@@ -309,14 +302,8 @@ impl BlockScheme for NvmeInterface {
     // uboot中对应实现 nvme_setup_prps
     // linux中对应实现 nvme_pci_setup_prps
     fn read_block(&self, block_id: usize, buf: &mut [u8]) -> DeviceResult {
-
-        // Starting LBA (SLBA): 
-        // This field indicates the 64-bit address of the first logical block to be read as part of the operation
         info!("-----------read data----------");
 
-        assert_eq!(buf.len(), 512);
-
-        //一次只读一块 512B
         let bar = self.dev.bar;
         let sq_dma_pa = self.nvme.as_ref().lock().sq_dma_pa as u32;
         let cq_dma_pa = self.nvme.as_ref().lock().cq_dma_pa as u32;
@@ -327,10 +314,10 @@ impl BlockScheme for NvmeInterface {
 
 
 
+        // let mut read_buf = [0 as u8;512];
+        
         // 这里dma addr 就是buffer的地址
-        let mut read_buf = [0 as u8;512];
-
-        let ptr = read_buf.as_mut_ptr();
+        let ptr = buf.as_mut_ptr();
 
         let addr = virt_to_phys(ptr as usize);
 
@@ -361,13 +348,11 @@ impl BlockScheme for NvmeInterface {
             }
         }
 
-        info!("read_buf :{:#x?}", read_buf);
-
         Ok(())
     }
 
     fn write_block(&self, block_id: usize, buf: &[u8]) -> DeviceResult {
-
+        info!("-----------write data----------");
         
         // 1 SLBA = 512B
         // 1 sector = 4KB
@@ -377,6 +362,9 @@ impl BlockScheme for NvmeInterface {
         // This field indicates the 64-bit address of the first logical block to be read as part of the operation
 
         let bar = self.dev.bar;
+
+        info!("bar :{:#x?}", bar);
+
         let sq_dma_pa = self.nvme.as_ref().lock().sq_dma_pa as u32;
         let cq_dma_pa = self.nvme.as_ref().lock().cq_dma_pa as u32;
         let data_dma_pa = self.nvme.as_ref().lock().data_dma_pa as u64;
@@ -406,16 +394,16 @@ impl BlockScheme for NvmeInterface {
                 unsafe{
             write_volatile((admin_q_db + 8)as *mut u32, 6)
         }
-        loop {
-            let status = self.nvme.as_ref().lock().cq[5].read();
-            if status.status != 0 {
-                info!("nvme cq :{:#x?}", status);
-                unsafe{
-                    write_volatile((admin_q_db + 0xc) as *mut u32, 6)
-                }
-                break;
-            }
-        }
+        // loop {
+        //     let status = self.nvme.as_ref().lock().cq[5].read();
+        //     if status.status != 0 {
+        //         info!("nvme cq :{:#x?}", status);
+        //         unsafe{
+        //             write_volatile((admin_q_db + 0xc) as *mut u32, 6)
+        //         }
+        //         break;
+        //     }
+        // }
         Ok(())
     }
 
@@ -424,28 +412,21 @@ impl BlockScheme for NvmeInterface {
     }
 }
 
-
-
-
-
 impl Scheme for NvmeInterface {
     fn name(&self) -> &str {
-        "nvme"
+        "real_nvme"
     }
 
     fn handle_irq(&self, irq: usize) {
+
         warn!("nvme device irq");
     }
 }
-
-
 
 pub fn nvme_init_early() -> DeviceResult<NvmeInterface> {
     let nvme_interface = NvmeInterface::new_early()?;
     Ok(nvme_interface)
 }
-
-
 
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]

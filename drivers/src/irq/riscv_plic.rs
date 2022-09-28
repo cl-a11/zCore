@@ -28,6 +28,33 @@ struct PlicUnlocked {
     manager: IrqManager<1024>,
 }
 
+
+
+use core::ptr;
+// qemu puts platform-level interrupt controller (PLIC) here.
+pub const PLIC_BASE: usize = 0x0c000000;
+
+/// qemu puts UART registers here in physical memory.
+pub const UART0:usize = 0x10000000;
+pub const UART0_IRQ: u32 = 10;
+
+/// virtio mmio interface
+pub const VIRTIO0:usize = 0x10001000;
+pub const VIRTIO0_IRQ: u32 = 1;
+
+fn plic_senable(hart_id: usize) -> usize {
+    PLIC_BASE + 0x2080 + hart_id * 0x100
+}
+
+fn plic_spriority(hart_id: usize) -> usize {
+    PLIC_BASE + 0x201000 + hart_id * 0x2000
+}
+
+fn plic_sclaim(hart_id: usize) -> usize {
+    PLIC_BASE + 0x201004 + hart_id * 0x2000
+}
+
+
 pub struct Plic {
     inner: Mutex<PlicUnlocked>,
 }
@@ -37,15 +64,21 @@ impl PlicUnlocked {
     fn toggle(&mut self, irq_num: usize, enable: bool) {
         debug_assert!(IRQ_RANGE.contains(&irq_num));
         let hart_id = cpu_id() as usize;
+        let size = core::mem::size_of::<u32>();
         let mmio = self
             .enable_base
-            .add(PLIC_ENABLE_HART_OFFSET * hart_id + irq_num / 32);
+            .add(irq_num / 32 * (size));
 
+        // 1 << (hwirq % 32)    
         let mask = 1 << (irq_num % 32);
+
+        let enable_write = mmio.read() | mask;
+        let disable_write = mmio.read() & !mask;
+        info!("enable_write: {:#x}, disable_write: {:#x}", enable_write, disable_write);
         if enable {
-            mmio.write(mmio.read() | mask);
+            mmio.write(enable_write);
         } else {
-            mmio.write(mmio.read() & !mask);
+            mmio.write(disable_write);
         }
     }
 
