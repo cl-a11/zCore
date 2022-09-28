@@ -25,6 +25,12 @@ pub(super) fn super_soft() {
     info!("Interrupt::SupervisorSoft!");
 }
 
+
+// pub(super) fn super_external() {
+//     info!("Interrupt::SupervisorExternal!");
+// }
+
+
 #[no_mangle]
 pub extern "C" fn trap_handler(tf: &mut TrapFrame) {
     let scause = scause::read();

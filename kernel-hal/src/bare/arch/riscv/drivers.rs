@@ -71,14 +71,6 @@ pub(super) fn init() -> DeviceResult {
             warn!("add device: {:?}", d);
             drivers::add_device(d);
         }
-        // for d in pci_devs.into_iter() {
-
-        //     if let Device::Block(blk) = d {
-        //         drivers::add_blk_device(blk);
-        //     } else {
-        //         drivers::add_device(d);
-        //     }
-        // }
     }
 
     intc_init()?;
@@ -117,6 +109,14 @@ pub(super) fn intc_init() -> DeviceResult {
     )?;
     irq.unmask(ScauseIntCode::SupervisorSoft as _)?;
     irq.unmask(ScauseIntCode::SupervisorTimer as _)?;
+
+
+    // irq.register_handler(
+    //     ScauseIntCode::SupervisorExternal as _,
+    //     Box::new(super::trap::super_external),
+    // )?;
+
+    // irq.unmask(ScauseIntCode::SupervisorExternal as _)?;
 
     Ok(())
 }

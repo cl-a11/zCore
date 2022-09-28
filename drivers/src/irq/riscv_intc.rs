@@ -10,7 +10,7 @@ use core::sync::atomic::{AtomicU8, Ordering};
 
 const S_SOFT: usize = 1;
 const S_TIMER: usize = 5;
-const S_EXT: usize = 8;
+const S_EXT: usize = 9;
 
 static INTC_NUM: AtomicU8 = AtomicU8::new(0);
 
@@ -111,6 +111,7 @@ impl IrqScheme for Intc {
     }
 
     fn register_handler(&self, cause: usize, handler: IrqHandler) -> DeviceResult {
+        info!("register handler for SCAUSE {}!", cause);
         self.with_handler(cause, |opt| {
             if opt.is_some() {
                 Err(DeviceError::AlreadyExists)
