@@ -37,12 +37,13 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 
+    let irq = kernel_hal::drivers::all_irq().find("riscv-intc-cpu0").unwrap();
 
+    warn!("Kernel loop!");
 
-
-    // loop{
+    loop{
         
-    // }
+    }
 
 
 

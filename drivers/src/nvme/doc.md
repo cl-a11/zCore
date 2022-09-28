@@ -201,3 +201,252 @@ __pci_assign_resource
 
 assign_requested_resources_sorted
 bus_for_each_dev
+
+
+
+/*
+
+* Maximum Data Transfer Size (MDTS) field indicates the maximum
+* data transfer size between the host and the controller. The
+* host should not submit a command that exceeds this transfer
+* size. The value is in units of the minimum memory page size
+* and is reported as a power of two (2^n).
+*
+* The spec also says: a value of 0h indicates no restrictions
+* on transfer size. But in nvme_blk_read/write() below we have
+* the following algorithm for maximum number of logic blocks
+* per transfer:
+*
+* u16 lbas = 1 << (dev->max_transfer_shift - ns->lba_shift);
+*
+* In order for lbas not to overflow, the maximum number is 15
+* which means dev->max_transfer_shift = 15 + 9 (ns->lba_shift).
+* Let's use 20 which provides 1MB size.
+ */
+
+// dev->max_transfer_shift = 20;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // pub fn init(&mut self, bar: usize, len:usize) {
+    
+    //     let nvme_version = unsafe{
+    //         read_volatile((bar + NVME_REG_VS) as *const u32)
+    //     };
+
+    //     warn!("nvme version: {:?}", nvme_version);
+
+    //     //第一步在pci扫描到设备时已经完成
+
+    //     //第二步 设置admin queue,包括其需要的CQ和SQ空间和DMA地址
+    //     // let nvme: Nvme<ProviderImpl> = super::Nvme::new();
+
+    //     // // let q_db = dbs[qid * 2 * db_stride]
+    //     // // admin queue 队列深度 31
+    //     // // aqa寄存器高16bit存储cq深度，低16bit存储sq深度
+
+    //     // let bar = self.dev.bar;
+
+    //     // let aqa_low_16 = 31 as u16;
+    //     // let aqa_high_16 = 31 as u16;
+    //     // let aqa = (aqa_high_16 as u32) << 16 | aqa_low_16 as u32;
+    //     // let aqa_address = bar + NVME_REG_AQA;
+
+    //     // // 将admin queue配置信息写入nvme设备寄存器AQA, admin_queue_attributes
+    //     // unsafe{
+    //     //     write_volatile(aqa_address as *mut u32, aqa);
+    //     // }
+
+    //     // info!("nvme aqa {:#x?} aqa_address {:#x?}", aqa, aqa_address);
+
+
+
+        
+    //     // 将admin queue的sq dma物理地址写入nvme设备上的寄存器ASQ
+    //     let sq_dma_pa = nvme.sq_dma_pa as u32;
+    //     let asq_address = bar + NVME_REG_ASQ ;
+    //     info!("nvme asq_address {:#x?} sq_dma_pa {:#x?}", asq_address, sq_dma_pa);
+    //     unsafe{
+    //         write_volatile(asq_address as *mut u32, sq_dma_pa);
+    //     }
+
+    //     // 将admin queue的cq dma物理地址写入nvme设备上的寄存器ACQ
+    //     let cq_dma_pa = nvme.cq_dma_pa as u32;
+    //     let acq_address = bar + NVME_REG_ACQ;
+    //     info!("nvme acq_address {:#x?} cq_dma_pa {:#x?}", acq_address, cq_dma_pa);
+    //     unsafe{
+    //         write_volatile(acq_address as *mut u32, cq_dma_pa);
+    //     }
+
+    //     let dev_dbs = bar + NVME_REG_DBS;
+
+    //     let enable_ctrl = 0x460061;        
+    //     unsafe{
+    //         write_volatile((bar + NVME_REG_CC) as *mut u32, enable_ctrl)
+    //     }
+        
+    //     let dev_status = unsafe {
+    //         read_volatile((bar + NVME_REG_CSTS) as *mut u32)
+    //     };
+
+    //     info!("nvme dev_status {:#x?}", dev_status);
+
+        
+    //     // sq: &'static mut[Volatile<NvmeCommonCommand>],
+    //     // ---------------------------------------------------------------------------------------------------
+    //     //config admin queue
+
+
+
+
+
+
+    //     let mut cmd = NvmeIdentify::nvme_init_non_mdts_limits();
+    //     cmd.prp1 = nvme.data_dma_pa as u64;
+    //     cmd.command_id = 0x1019;
+    //     cmd.nsid = 1;
+    //     cmd.cns = 0x6;
+    //     let mut z = unsafe {
+    //         core::mem::transmute(cmd)
+    //     };
+
+    //     info!("cmd :{:#x?}", z);
+    //     nvme.sq[1].write(z);
+    //     let admin_q_db = dev_dbs;
+    //     unsafe{
+    //         write_volatile(admin_q_db as *mut u32, 2)
+    //     }
+    //     loop {
+    //         let status = nvme.cq[1].read();
+    //         // let cq_phase = status1.status & 1;
+    //         if status.status != 0 {
+    //             info!("nvme cq :{:#x?}", status);
+    //             unsafe{
+    //                 write_volatile((admin_q_db + 0x4) as *mut u32, 2)
+    //             }
+    //             break;
+    //         }
+    //     }
+
+    //     //nvme_set_queue_count
+    //     let mut cmd = NvmeCommonCommand::new();
+    //     cmd.opcode = 0x09;
+    //     cmd.command_id = 0x101a;
+    //     cmd.nsid = 1;
+    //     cmd.cdw10 = 0x7;
+    //     let mut z = unsafe {
+    //         core::mem::transmute(cmd)
+    //     };
+
+    //     info!("cmd :{:#x?}", z);
+    //     nvme.sq[2].write(z);
+
+    //     unsafe{
+    //         write_volatile(admin_q_db as *mut u32, 3)
+    //     }
+
+    //     loop {
+    //         let status = nvme.cq[2].read();
+    //         if status.status != 0 {
+    //             info!("nvme cq :{:#x?}", status);
+    //             unsafe{
+    //                 write_volatile((admin_q_db + 0x4) as *mut u32, 3)
+    //             }
+    //             break;
+    //         }
+    //     }
+
+
+
+
+    //     //nvme create cq
+    //     let mut cmd = NvmeCommonCommand::new();
+    //     cmd.opcode = 0x05;
+    //     cmd.command_id = 0x101b;
+    //     cmd.nsid = 1;
+    //     cmd.prp1 = nvme.cq_dma_pa as u64;
+    //     cmd.cdw10 = 0x3ff0001;
+    //     cmd.cdw11 = 0x3;
+    //     let mut z = unsafe {
+    //         core::mem::transmute(cmd)
+    //     };
+    //     info!("cmd :{:#x?}", z);
+    //     nvme.sq[3].write(z);
+    //             unsafe{
+    //         write_volatile(admin_q_db as *mut u32, 4)
+    //     }
+    //     loop {
+    //         let status = nvme.cq[3].read();
+    //         if status.status != 0 {
+    //             info!("nvme cq :{:#x?}", status);
+    //             unsafe{
+    //                 write_volatile((admin_q_db + 0x4) as *mut u32, 4)
+    //             }
+    //             break;
+    //         }
+    //     }
+
+
+    //     //nvme create sq
+    //     let mut cmd = NvmeCommonCommand::new();
+    //     cmd.opcode = 0x01;
+    //     cmd.command_id = 0x2018;
+    //     cmd.nsid = 1;
+    //     cmd.prp1 = nvme.sq_dma_pa as u64;
+    //     cmd.cdw10 = 0x3ff0001;
+    //     cmd.cdw11 = 0x10001;
+    //     let mut z = unsafe {
+    //         core::mem::transmute(cmd)
+    //     };
+    //     info!("cmd :{:#x?}", z);
+    //     nvme.sq[4].write(z);
+    //             unsafe{
+    //         write_volatile(admin_q_db as *mut u32, 5)
+    //     }
+    //     loop {
+    //         let status = nvme.cq[4].read();
+    //         if status.status != 0 {
+    //             info!("nvme cq :{:#x?}", status);
+    //             unsafe{
+    //                 write_volatile((admin_q_db + 0x4) as *mut u32, 5)
+    //             }
+    //             break;
+    //         }
+    //     }
+        
+
+    // }
+
+
+
+
+
+
+
+
+
+
+
+// register by real hardware
+pci->map_irq
+
+of_irq_parse_and_map_pci
+
+irq_create_mapping

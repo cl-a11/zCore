@@ -14,8 +14,7 @@ pub const NVME_COMPLETION_SIZE: usize = 16;
 
 #[derive(Debug)]
 pub struct Nvme<P: Provider> {
-    header: usize,
-    size: usize,
+
     provider: PhantomData<P>,
     //  submission queue 每个命令64字节
     pub sq: &'static mut[Volatile<NvmeCommonCommand>],
@@ -32,16 +31,11 @@ pub struct Nvme<P: Provider> {
 
 impl<P: Provider> Nvme<P> {
 
-    pub fn new(header:usize, size:usize) -> Self{
-
+    pub fn new() -> Self{
         let (data_va, data_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
         let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
         let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
-
-
-
-
-
+        
         let submit_queue = unsafe{
             slice::from_raw_parts_mut(
                 sq_va as *mut Volatile<NvmeCommonCommand>, 
@@ -56,13 +50,8 @@ impl<P: Provider> Nvme<P> {
             )
         };
 
-        
-
-
 
         Nvme{
-            header,
-            size,
             provider: PhantomData,
             sq: submit_queue,
             cq: complete_queue,
@@ -87,26 +76,6 @@ impl<P: Provider> Drop for Nvme<P> {
 
     }
 }
-
-
-pub struct NvmeDriver {
-
-}
-
-impl NvmeDriver{
-    pub fn new() -> Self{
-        NvmeDriver{
-        }
-    }
-
-    pub fn handle_interrupt(&self) -> usize{
-        0
-    }
-}
-
-
-
-
 /// External functions that drivers must use
 pub trait Provider {
     /// Page size (usually 4K)

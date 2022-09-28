@@ -11,7 +11,6 @@ use super::queue::NvmeQueue;
  // 每个队列都有一个sq(submition queue)和一个cq(completion queue)
 
 pub struct NvmeDev{
-
     //一个设备只能有一个admin队列
     pub admin_queue: NvmeQueue,
 
@@ -19,14 +18,12 @@ pub struct NvmeDev{
     pub io_queues: Vec<NvmeQueue>,
 
     // bar0~bar5, 目前只用bar0
-    //base address register  pcie controller 向os提供的一组寄存器用于访问设备内部的空间(接收控制信息)
+    // base address register  pcie controller 向os提供的一组寄存器用于访问设备内部的空间(接收控制信息)
     pub bar: usize,
 
     // pub cap: usize,
     // pub dbs: usize,
 }
-
-
 
 impl NvmeDev{
     pub fn new(bar: usize) -> Self{

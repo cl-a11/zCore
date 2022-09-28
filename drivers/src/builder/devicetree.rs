@@ -81,8 +81,6 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                     dev
                 })
             } else {
-
-                warn!("c {:?}", comp);
                 // parse other device
                 match comp {
                     #[cfg(feature = "virtio")]
@@ -109,8 +107,6 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
 
         // 注册中断
         for (device, interrupts_extended) in &dev_list {
-
-            warn!("device: {:?} interrupts_extended: {:#x?}", device, interrupts_extended);
             let mut extended = interrupts_extended.as_slice();
             // 分解 interrupts_extended
             while let [phandle, irq_num, ..] = extended {
@@ -196,10 +192,6 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                 .query_or_map(paddr as usize, size as usize)
                 .ok_or(DeviceError::NoResources)
         })?;
-
-
-        warn!("interrupts_extended: {:?}", interrupts_extended);
-        warn!("base_vaddr: {:#x?}", base_vaddr);
 
         let header = unsafe { &mut *(base_vaddr as *mut VirtIOHeader) };
         if !header.verify() {
@@ -294,17 +286,13 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                 .ok_or(DeviceError::NoResources)
         });
         warn!("NVMe init ...");
-        warn!("interrupts_extended: {:?}", interrupts_extended);
-        warn!("base_vaddr: {:#x?}", base_vaddr.unwrap());
-
-        // let irq_num = interrupts_extended[1];
         use crate::nvme::*;
         let dev = Device::Block(
             match comp {
             // #[cfg(target_arch = "riscv64")]
             c if c.contains("pci-host-ecam-generic") => {
                 Arc::new(
-                    nvme_init(0 as usize, 0x40000000, 0x10000)?
+                    nvme_init_early()?
                 )
             }
             _ => return Err(DeviceError::NotSupported),
