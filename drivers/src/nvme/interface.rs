@@ -326,7 +326,7 @@ impl BlockScheme for NvmeInterface {
     }
 
     fn write_block(&self, block_id: usize, buf: &[u8]) -> DeviceResult {
-        info!("-----------write data----------");
+        // info!("-----------write data----------");
         
         // 1 SLBA = 512B
         // 1 sector = 4KB

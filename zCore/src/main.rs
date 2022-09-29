@@ -52,6 +52,11 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     irq.unmask(irq_num);
     
 
+    let intc = kernel_hal::drivers::all_irq().find("riscv-intc-cpu0").unwrap();
+
+    intc.register_handler(5, Box::new(move || irq.handle_irq(5)));
+    intc.unmask(5);
+
     warn!("test nvme rw");
     let nvme2 = kernel_hal::drivers::all_block()
     .find("real_nvme")
@@ -62,22 +67,34 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     nvme2.write_block(1, &write_buf);
 
 
-    info!("plic handle irq");
+    // info!("plic handle irq");
 
 
-    // unsafe{
-    //     use core::arch::asm;
+    unsafe{
+        use core::arch::asm;
+        use riscv::register::sstatus;
+        use riscv::register::sie;
 
-    //     let ext = 1<<9;
-    //     let timer = 1<<5;
-    //     asm!("csrw sie, {}", in(reg) ext);
-
-    //     asm!("csrw sie, {}", in(reg) timer);
-    // }
-
-    loop {
-        irq.handle_irq(irq_num);
+        unsafe {
+            sie::set_stimer();
+            sie::set_sext();
+            sstatus::set_sie();
+        }
     }
+
+    // use kernel_hal::console::console_write_early;
+
+    // console_write_early("11111");
+
+    // loop {
+    //     kernel_hal::interrupt::wait_for_interrupt();
+    //     irq.handle_irq(irq_num);
+    //     unsafe{
+    //         core::arch::asm!("ebreak");
+    //     }
+
+    //     nvme2.write_block(2, &write_buf);
+    // }
 
     let mut read_buf = [0u8; 512];
 
@@ -89,23 +106,26 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     
     warn!("Kernel loop!");
 
-    cfg_if! {
-        if #[cfg(all(feature = "linux", feature = "zircon"))] {
-            panic!("Feature `linux` and `zircon` cannot be enabled at the same time!");
-        } else if #[cfg(feature = "linux")] {
-            let args = options.root_proc.split('?').map(Into::into).collect(); // parse "arg0?arg1?arg2"
-            let envs = alloc::vec!["PATH=/usr/sbin:/usr/bin:/sbin:/bin".into()];
-            let rootfs = fs::rootfs();
-            let proc = zcore_loader::linux::run(args, envs, rootfs);
-            utils::wait_for_exit(Some(proc))
-        } else if #[cfg(feature = "zircon")] {
-            let zbi = fs::zbi();
-            let proc = zcore_loader::zircon::run_userboot(zbi, &options.cmdline);
-            utils::wait_for_exit(Some(proc))
-        } else {
-            panic!("One of the features `linux` or `zircon` must be specified!");
-        }
+    loop{
+
     }
+    // cfg_if! {
+    //     if #[cfg(all(feature = "linux", feature = "zircon"))] {
+    //         panic!("Feature `linux` and `zircon` cannot be enabled at the same time!");
+    //     } else if #[cfg(feature = "linux")] {
+    //         let args = options.root_proc.split('?').map(Into::into).collect(); // parse "arg0?arg1?arg2"
+    //         let envs = alloc::vec!["PATH=/usr/sbin:/usr/bin:/sbin:/bin".into()];
+    //         let rootfs = fs::rootfs();
+    //         let proc = zcore_loader::linux::run(args, envs, rootfs);
+    //         utils::wait_for_exit(Some(proc))
+    //     } else if #[cfg(feature = "zircon")] {
+    //         let zbi = fs::zbi();
+    //         let proc = zcore_loader::zircon::run_userboot(zbi, &options.cmdline);
+    //         utils::wait_for_exit(Some(proc))
+    //     } else {
+    //         panic!("One of the features `linux` or `zircon` must be specified!");
+    //     }
+    // }
 }
 
 #[cfg(not(any(feature = "libos", target_arch = "aarch64")))]

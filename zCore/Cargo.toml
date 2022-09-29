@@ -59,6 +59,7 @@ rcore-fs = { git = "https://github.com/rcore-os/rcore-fs", rev = "1a3246b", opti
 rcore-fs-sfs = { git = "https://github.com/rcore-os/rcore-fs", rev = "1a3246b", optional = true }
 lock = { git = "https://github.com/DeathWish5/kernel-sync", rev = "766fbb5" }
 executor = { git = "https://github.com/DeathWish5/PreemptiveScheduler", rev = "e8cd353" }
+riscv = "0.8"
 
 # LibOS mode
 [target.'cfg(not(target_os = "none"))'.dependencies]
@@ -73,7 +74,7 @@ buddy_system_allocator = "0.8"
 # RISC-V
 [target.'cfg(any(target_arch = "riscv32", target_arch = "riscv64"))'.dependencies]
 r0 = "1"
-riscv = "0.8"
+
 dtb-walker = "=0.2.0-alpha.3"
 page-table = "0.0.2"
 sbi-rt = { git = "https://github.com/rustsbi/sbi-rt.git", rev = "2933f8d" }

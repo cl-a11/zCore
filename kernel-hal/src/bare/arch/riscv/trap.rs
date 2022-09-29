@@ -34,6 +34,13 @@ pub(super) fn super_soft() {
 #[no_mangle]
 pub extern "C" fn trap_handler(tf: &mut TrapFrame) {
     let scause = scause::read();
+
+    // use crate::console::console_write_early;
+// 
+    // console_write_early("kernel trap happened");
+
+
+
     info!("kernel trap happened: {:?}", TrapReason::from(scause));
     info!(
         "sepc = 0x{:x} pgtoken = 0x{:x}",

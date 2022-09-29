@@ -43,6 +43,10 @@ cfg_if! {
     }
 }
 
+pub fn console_write_early(s: &str) {
+    crate::hal_fn::console::console_write_early(s);
+}
+
 /// Writes a string slice into the serial.
 pub fn serial_write_str(s: &str) {
     SERIAL_WRITER.lock().write_str(s).unwrap();

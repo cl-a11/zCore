@@ -41,6 +41,7 @@ pub trait IrqScheme: Scheme {
 
     /// Register the device to delivery an IRQ.
     fn register_device(&self, irq_num: usize, dev: Arc<dyn Scheme>) -> DeviceResult {
+        warn!("register irq num {}", irq_num);
         self.register_handler(irq_num, Box::new(move || dev.handle_irq(irq_num)))
     }
 
