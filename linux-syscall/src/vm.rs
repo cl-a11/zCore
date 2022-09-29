@@ -82,7 +82,7 @@ impl Syscall<'_> {
     ) -> SysResult {
         let prot = MmapProt::from_bits_truncate(prot);
         let flags = MmapFlags::from_bits_truncate(flags);
-        info!(
+        debug!(
             "mmap: addr={:#x}, size={:#x}, prot={:?}, flags={:?}, fd={:?}, offset={:#x}",
             addr, len, prot, flags, fd, offset
         );
@@ -162,7 +162,7 @@ impl Syscall<'_> {
     /// Both `addr` and `len` must be aligned to the page size, additionally, `len` must greater than 0.
     /// Otherwise, an [`EINVAL`](LxError::EINVAL) is returned.
     pub fn sys_munmap(&self, addr: usize, len: usize) -> SysResult {
-        info!("munmap: addr={:#x}, size={:#x}", addr, len);
+        debug!("munmap: addr={:#x}, size={:#x}", addr, len);
         let proc = self.thread.proc();
         let vmar = proc.vmar();
         vmar.unmap(addr, len)?;

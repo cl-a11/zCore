@@ -16,6 +16,8 @@ const _PCI_MSI_UPPER_ADDR: u16 = 0x08;
 const PCI_MSI_DATA_32: u16 = 0x08;
 const PCI_MSI_DATA_64: u16 = 0x0C;
 
+const PCI_COMMAND_INTX_DISABLE:u16 = 0x400;
+
 const PCI_CAP_ID_MSI: u8 = 0x05;
 
 struct PortOpsImpl;
@@ -90,7 +92,6 @@ impl PortOps for PortOpsImpl {
 /// Enable the pci device and its interrupt
 /// Return assigned MSI interrupt number when applicable
 unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
-    warn!("enable--------------");
     let ops = &PortOpsImpl;
     //let am = CSpaceAccessMethod::IO;
     let am = PCI_ACCESS;
@@ -111,7 +112,7 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
 
     let orig = am.read16(ops, loc, PCI_COMMAND);
     // IO Space | MEM Space | Bus Mastering | Special Cycles | PCI Interrupt Disable
-    am.write32(ops, loc, PCI_COMMAND, (orig | 0x40f) as u32);
+    // am.write32(ops, loc, PCI_COMMAND, (orig | 0x40f) as u32);
 
     // find MSI cap
     let mut msi_found = false;
@@ -155,9 +156,15 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
     if !msi_found {
         // Use PCI legacy interrupt instead
         // IO Space | MEM Space | Bus Mastering | Special Cycles
-        am.write32(ops, loc, _PCI_INTERRUPT_LINE, 15);
-        // am.write32(ops, loc, _PCI_INTERRUPT_LINE, 22);
-        // am.write32(ops, loc, _PCI_INTERRUPT_LINE, 23);
+
+        // info!("pci_orig {:#x}", orig);
+        am.write32(ops, loc, PCI_COMMAND, (0x6) as u32);
+
+
+        am.write32(ops, loc, _PCI_INTERRUPT_LINE, 33);
+        
+        
+
         warn!("MSI not found, using PCI interrupt");
     }
 

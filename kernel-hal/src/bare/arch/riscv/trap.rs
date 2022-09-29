@@ -34,8 +34,8 @@ pub(super) fn super_soft() {
 #[no_mangle]
 pub extern "C" fn trap_handler(tf: &mut TrapFrame) {
     let scause = scause::read();
-    trace!("kernel trap happened: {:?}", TrapReason::from(scause));
-    trace!(
+    info!("kernel trap happened: {:?}", TrapReason::from(scause));
+    info!(
         "sepc = 0x{:x} pgtoken = 0x{:x}",
         tf.sepc,
         crate::vm::current_vmtoken()

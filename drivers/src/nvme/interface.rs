@@ -4,13 +4,10 @@ use core::mem::size_of;
 use core::ptr::{read_volatile, write_volatile};
 use alloc::sync::Arc;
 
-
 use crate::scheme::{BlockScheme, Scheme};
 use crate::DeviceResult;
 
-
 use lock::Mutex;
-
 
 use super::dev::*;
 use super::driver::*;
@@ -214,6 +211,7 @@ impl NvmeInterface {
         cmd.prp1 = cq_dma_pa as u64;
         cmd.cdw10 = 0x3ff0001;
         cmd.cdw11 = 0x3;
+        // cmd.flags = 3;
         let common_cmd = unsafe {
             core::mem::transmute(cmd)
         };
@@ -242,6 +240,8 @@ impl NvmeInterface {
         cmd.prp1 = self.nvme.as_ref().lock().sq_dma_pa as u64;
         cmd.cdw10 = 0x3ff0001;
         cmd.cdw11 = 0x10001;
+        // cmd.flags = (NVME_QUEUE_PHYS_CONTIG | NVME_SQ_PRIO_MEDIUM)  as u8;
+
         let common_cmd = unsafe {
             core::mem::transmute(cmd)
         };
@@ -261,33 +261,6 @@ impl NvmeInterface {
             }
         }    
     }
-
-
-    // pub fn nvme_alloc_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
-    //     Ok(())
-    // }
-
-
-    // pub fn nvme_init_queue(&self, queue_id: usize, q_depth: usize) -> DeviceResult {
-    //     Ok(())
-    // }
-
-
-    // pub fn nvme_submit_sync_cmd(&mut self, cmd: NvmeCommand) -> DeviceResult {
-
-    //     Ok(())
-    // }
-
-
-    // pub fn nvme_read_completion_status(&mut self, nvmeq: &mut NvmeQueue) -> Option<usize>{
-
-    //     Some(0)
-    // }
-
-    // pub fn nvme_submit_cmd(&mut self, nvmeq: &mut NvmeQueue, cmd:NvmeCommand){
-    //     let cmdsize = size_of::<NvmeRWCommand>();
-    //     nvmeq.sq_push(cmd);
-    // }
 }
 
 impl BlockScheme for NvmeInterface {
@@ -331,7 +304,8 @@ impl BlockScheme for NvmeInterface {
         let common_cmd = unsafe {
             core::mem::transmute(cmd)
         };
-        // info!("cmd :{:#x?}", z);
+
+
         self.nvme.as_ref().lock().sq[6].write(common_cmd);
 
         unsafe{
@@ -362,9 +336,6 @@ impl BlockScheme for NvmeInterface {
         // This field indicates the 64-bit address of the first logical block to be read as part of the operation
 
         let bar = self.dev.bar;
-
-        info!("bar :{:#x?}", bar);
-
         let sq_dma_pa = self.nvme.as_ref().lock().sq_dma_pa as u32;
         let cq_dma_pa = self.nvme.as_ref().lock().cq_dma_pa as u32;
         let data_dma_pa = self.nvme.as_ref().lock().data_dma_pa as u64;
@@ -372,7 +343,6 @@ impl BlockScheme for NvmeInterface {
         let dev_dbs = bar + NVME_REG_DBS;
         let admin_q_db = dev_dbs;
 
-        // let buf:[u8;10] = [0,1,2,3,4,5,6,7,8,9];
 
         let ptr = buf.as_ptr();
 
@@ -389,11 +359,11 @@ impl BlockScheme for NvmeInterface {
         let common_cmd = unsafe {
             core::mem::transmute(cmd)
         };
-        // info!("cmd :{:#x?}", common_cmd);
         self.nvme.as_ref().lock().sq[5].write(common_cmd);
                 unsafe{
             write_volatile((admin_q_db + 8)as *mut u32, 6)
         }
+
         // loop {
         //     let status = self.nvme.as_ref().lock().cq[5].read();
         //     if status.status != 0 {
@@ -475,8 +445,6 @@ pub enum NvmeCommand {
     NvmeCreateSq,
 	NvmeCreateCq,
 }
-
-
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 // 4+4+2+2+2+2 16B
@@ -504,6 +472,7 @@ pub struct NvmeCreateCq{
     pub irq_vector: u16,
     pub rsvd12: [u32;4],
 }
+
 pub const NVME_CQ_IRQ_ENABLED: u16 = 1 << 1;
 
 impl NvmeCreateCq{
@@ -524,7 +493,6 @@ impl NvmeCreateCq{
         }
     }
 }
-
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -625,8 +593,6 @@ impl NvmeRWCommand{
     }
 }
 
-
-
 pub struct NvmeFeatures{
     opcode: u8,
     flags: u8,
@@ -672,22 +638,13 @@ impl NvmeFeatures{
         }
     }
 }
-
-
-
-
 // 16 bytes
 pub struct NvmeCompleteQueue{
     pub byte8_1: u64,
     pub byte8_2: u64,
 }
 
-
-
-
 pub const NVME_FEAT_NUM_QUEUES: u32 = 0x7;
-
-
 // 1+1+2+4+8+8+8+8+1+1+2+1+1+1+1+4+4+4+4 = 64 bytes
 #[repr(C)]
 #[derive(Debug, Clone, Copy)]
@@ -757,8 +714,6 @@ impl NvmeFeatAutoPst {
         }
     }
 }
-
-
 
 //NvmeRegister
 pub const NVME_REG_CAP:usize	= 0x0000;	/* Controller Capabilities */

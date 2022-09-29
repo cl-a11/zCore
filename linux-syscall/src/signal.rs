@@ -22,7 +22,7 @@ impl Syscall<'_> {
         sigsetsize: usize,
     ) -> SysResult {
         let signal = Signal::try_from(signum as u8).map_err(|_| LxError::EINVAL)?;
-        info!(
+        debug!(
             "rt_sigaction: signal={:?}, act={:?}, oldact={:?}, sigsetsize={}, thread={}",
             signal,
             act,
@@ -39,7 +39,7 @@ impl Syscall<'_> {
         let proc = self.linux_process();
         oldact.write_if_not_null(proc.signal_action(signal))?;
         if let Some(act) = act.read_if_not_null()? {
-            info!("new action: {:?} -> {:x?}", signal, act);
+            debug!("new action: {:?} -> {:x?}", signal, act);
             proc.set_signal_action(signal, act);
         }
         Ok(0)

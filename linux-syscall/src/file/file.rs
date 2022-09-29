@@ -19,7 +19,7 @@ impl Syscall<'_> {
     /// - base – pointer to the buffer to fill with read contents
     /// - len – number of bytes to read
     pub async fn sys_read(&self, fd: FileDesc, mut base: UserOutPtr<u8>, len: usize) -> SysResult {
-        info!("read: fd={:?}, base={:?}, len={:#x}", fd, base, len);
+        debug!("read: fd={:?}, base={:?}, len={:#x}", fd, base, len);
         let proc = self.linux_process();
         let file_like = proc.get_file_like(fd)?;
         let mut buf = vec![0u8; len];
@@ -89,7 +89,7 @@ impl Syscall<'_> {
         iov_ptr: UserInPtr<IoVecOut>,
         iov_count: usize,
     ) -> SysResult {
-        info!("readv: fd={:?}, iov={:?}, count={}", fd, iov_ptr, iov_count);
+        debug!("readv: fd={:?}, iov={:?}, count={}", fd, iov_ptr, iov_count);
         let mut iovs = iov_ptr.read_iovecs(iov_count)?;
         let proc = self.linux_process();
         let file_like = proc.get_file_like(fd)?;
@@ -108,7 +108,7 @@ impl Syscall<'_> {
         iov_ptr: UserInPtr<IoVecIn>,
         iov_count: usize,
     ) -> SysResult {
-        info!(
+        debug!(
             "writev: fd={:?}, iov={:?}, count={}",
             fd, iov_ptr, iov_count
         );
@@ -281,7 +281,7 @@ impl Syscall<'_> {
         arg2: usize,
         arg3: usize,
     ) -> SysResult {
-        info!(
+        debug!(
             "ioctl: fd={:?}, request={:#x}, args=[{:#x}, {:#x}, {:#x}]",
             fd, request, arg1, arg2, arg3
         );

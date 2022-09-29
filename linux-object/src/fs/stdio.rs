@@ -124,12 +124,12 @@ impl INode for Stdin {
                 Ok(0)
             }
             TCGETS | TIOCSPGRP => {
-                warn!("stdin TCGETS | TIOCSPGRP, pretend to be tty.");
+                debug!("stdin TCGETS | TIOCSPGRP, pretend to be tty.");
                 // pretend to be tty
                 Ok(0)
             }
             TIOCGPGRP => {
-                warn!("stdin TIOCGPGRP, pretend to be have a tty process group.");
+                debug!("stdin TIOCGPGRP, pretend to be have a tty process group.");
                 // pretend to be have a tty process group
                 // TODO: verify pointer
                 unsafe { *(data as *mut u32) = 0 };

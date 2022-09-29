@@ -24,7 +24,7 @@ impl Syscall<'_> {
         timeout_msecs: isize,
     ) -> SysResult {
         let mut polls = ufds.read_array(nfds)?;
-        info!(
+        debug!(
             "poll: ufds: {:?}, nfds: {:?}, timeout_msecs: {}",
             polls, nfds, timeout_msecs
         );
@@ -139,7 +139,7 @@ impl Syscall<'_> {
         };
         let result = future.await;
         ufds.write_array(&polls)?;
-        info!("return ufds: {:?}", polls);
+        debug!("return ufds: {:?}", polls);
         result
     }
 

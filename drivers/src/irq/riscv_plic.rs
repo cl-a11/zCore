@@ -85,10 +85,7 @@ impl PlicUnlocked {
     /// Ask the PLIC what type of interrupt is occurred on the current hart.
     fn pending_irq(&mut self) -> Option<usize> {
         let hart_id = cpu_id() as usize;
-        let irq_num = self
-            .context_base
-            .add(PLIC_CONTEXT_CLAIM_HART_OFFSET * hart_id + PLIC_CONTEXT_CLAIM)
-            .read() as usize;
+        let irq_num = self.context_base.add(PLIC_CONTEXT_CLAIM_HART_OFFSET * hart_id + PLIC_CONTEXT_CLAIM).read() as usize;
         if irq_num == 0 {
             None
         } else {
@@ -145,12 +142,13 @@ impl Scheme for Plic {
     }
 
     fn handle_irq(&self, _unused: usize) {
+        // info!("plic handle_irq {}", _unused);
         let mut inner = self.inner.lock();
         while let Some(irq_num) = inner.pending_irq() {
             if inner.manager.handle(irq_num).is_err() {
                 warn!("no registered handler for IRQ {}!", irq_num);
             }
-            trace!("riscv plic handle irq: {}", irq_num);
+            info!("riscv plic handle irq: {}", irq_num);
             inner.eoi(irq_num);
         }
     }
@@ -180,6 +178,7 @@ impl IrqScheme for Plic {
     }
 
     fn register_handler(&self, irq_num: usize, handler: IrqHandler) -> DeviceResult {
+        info!("plic register_handler: {}", irq_num);
         let mut inner = self.inner.lock();
         inner.manager.register_handler(irq_num, handler).map(|_| {
             inner.set_priority(irq_num, 7);

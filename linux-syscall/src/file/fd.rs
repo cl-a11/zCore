@@ -31,7 +31,7 @@ impl Syscall<'_> {
             path
         };
         let flags = OpenFlags::from_bits_truncate(flags);
-        info!(
+        debug!(
             "openat: dir_fd={:?}, path={:?}, flags={:?}, mode={:#o}",
             dir_fd, path, flags, mode
         );
