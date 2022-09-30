@@ -154,13 +154,9 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
     }
 
     if !msi_found {
-        // Use PCI legacy interrupt instead
-        // IO Space | MEM Space | Bus Mastering | Special Cycles
 
-        // info!("pci_orig {:#x}", orig);
-        am.write32(ops, loc, PCI_COMMAND, (0x6) as u32);
-
-
+        // am.write16(ops, loc, PCI_COMMAND, (0x2) as u16);
+        am.write16(ops, loc, PCI_COMMAND, (0x6) as u16);
         am.write32(ops, loc, _PCI_INTERRUPT_LINE, 33);
         
         

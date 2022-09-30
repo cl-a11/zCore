@@ -389,7 +389,7 @@ impl Scheme for NvmeInterface {
 
     fn handle_irq(&self, irq: usize) {
 
-        warn!("nvme device irq");
+        error!("nvme device irq");
     }
 }
 

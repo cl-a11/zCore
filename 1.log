@@ -1,0 +1,168 @@
+
+OpenSBI v1.0
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : riscv-virtio,qemu
+Platform Features         : medeleg
+Platform HART Count       : 1
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 10000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : ---
+Platform Reboot Device    : sifive_test
+Platform Shutdown Device  : sifive_test
+Firmware Base             : 0x80000000
+Firmware Size             : 252 KB
+Runtime SBI Version       : 0.3
+
+Domain0 Name              : root
+Domain0 Boot HART         : 0
+Domain0 HARTs             : 0*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000080000000-0x000000008003ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000080200000
+Domain0 Next Arg1         : 0x000000009fe00000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 0
+Boot HART Domain          : root
+Boot HART ISA             : rv64imafdcsuh
+Boot HART Features        : scounteren,mcounteren,mcountinhibit,time
+Boot HART PMP Count       : 16
+Boot HART PMP Granularity : 4
+Boot HART PMP Address Bits: 54
+Boot HART MHPM Count      : 16
+Boot HART MIDELEG         : 0x0000000000001666
+Boot HART MEDELEG         : 0x0000000000f0b509
+
+boot page table launched, sstatus = 0x8000000200046000
+kernel (physical): 0000000080200000..00000000853a00d0
+kernel (remapped): ffffffffc0000000..ffffffffc51a00d0
+device tree:       000000009fe00000..000000009fe0140a
+
+hart0 is the primary hart.
+
+[37m[  0.001478 [92mINFO [m [37m0 0:0 zcore::memory][m [32mHeap init end: 0xffffffffc019da38..0xffffffffc519da38[m
+[m[37m[  0.001524 [92mINFO [m [37m0 0:0 kernel_hal::imp::boot][m [32mPrimary CPU 0 init early...[m
+[m[37m[  0.001571 [92mINFO [m [37m0 0:0 kernel_hal::imp::arch][m [32mLoad kernel cmdline from DTB: "LOG=warn"[m
+[m[37m[  0.001606 [92mINFO [m [37m0 0:0 kernel_hal::imp::arch][m [32mLoad memory regions from DTB: [
+    0x80000000..0xa0000000,
+][m
+[m[37m[  0.001648 [92mINFO [m [37m0 0:0 kernel_hal::imp::arch][m [32mLoad CPU clock frequency from DTB: 10000000 Hz[m
+[m[37m[  0.167722 [92mINFO [m [37m0 0:0 kernel_hal::imp::arch][m [32mLoad initrd regions from DTB: 0x88200000..0x888d3a00[m
+[m[37m[  0.172314 [92mINFO [m [37m0 0:0 zcore][m [32mBoot options: BootOptions {
+    cmdline: "LOG=warn",
+    log_level: "warn",
+    root_proc: "/bin/busybox?sh",
+}[m
+[m[37m[  0.177991 [92mINFO [m [37m0 0:0 zcore::memory][m [32mFrame allocator: add range 0x853a2000..0x88200000[m
+[m[37m[  0.180811 [92mINFO [m [37m0 0:0 zcore::memory][m [32mFrame allocator: add range 0x888d4000..0xa0000000[m
+[m[37m[  0.183499 [92mINFO [m [37m0 0:0 zcore::memory][m [32mFrame allocator init end.[m
+[m[37m[  0.185767 [92mINFO [m [37m0 0:0 kernel_hal::imp::boot][m [32mPrimary CPU 0 init...[m
+[m[37m[  0.203551 [92mINFO [m [37m0 0:0 kernel_hal::imp::arch::vm][m [32minitialized kernel page table @ 0x853a2000[m
+[m[37m[  0.208800 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "" with compatible ["riscv-virtio"][m
+[m[37m[  0.212279 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "fw-cfg@10100000" with compatible ["qemu,fw-cfg-mmio"][m
+[m[37m[  0.214755 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "flash@20000000" with compatible ["cfi-flash"][m
+[m[37m[  0.217189 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "platform@4000000" with compatible ["qemu,platform", "simple-bus"][m
+[m[37m[  0.219860 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "cpu@0" with compatible ["riscv"][m
+[m[37m[  0.222076 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "interrupt-controller" with compatible ["riscv,cpu-intc"][m
+[m[37m[  0.224664 [92mINFO [m [37m0 0:0 zcore_drivers::builder::devicetree][m [32mfound interrupt controller[m
+[m[37m[  0.227425 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "soc" with compatible ["simple-bus"][m
+[m[37m[  0.229640 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "rtc@101000" with compatible ["google,goldfish-rtc"][m
+[m[37m[  0.232179 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "uart@10000000" with compatible ["ns16550a"][m
+[m[37m[  0.234625 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "poweroff" with compatible ["syscon-poweroff"][m
+[m[37m[  0.237038 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "reboot" with compatible ["syscon-reboot"][m
+[m[37m[  0.239386 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "test@100000" with compatible ["sifive,test1", "sifive,test0", "syscon"][m
+[m[37m[  0.242094 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "pci@30000000" with compatible ["pci-host-ecam-generic"][m
+[m[37m[  0.244648 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10008000" with compatible ["virtio,mmio"][m
+[m[37m[  0.248421 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10007000" with compatible ["virtio,mmio"][m
+[m[37m[  0.251084 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10006000" with compatible ["virtio,mmio"][m
+[m[37m[  0.256578 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10005000" with compatible ["virtio,mmio"][m
+[m[37m[  0.259422 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10004000" with compatible ["virtio,mmio"][m
+[m[37m[  0.262399 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10003000" with compatible ["virtio,mmio"][m
+[m[37m[  0.265741 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10002000" with compatible ["virtio,mmio"][m
+[m[37m[  0.269554 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "virtio_mmio@10001000" with compatible ["virtio,mmio"][m
+[m[37m[  0.274576 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "plic@c000000" with compatible ["sifive,plic-1.0.0", "riscv,plic0"][m
+[m[37m[  0.277118 [92mINFO [m [37m0 0:0 zcore_drivers::builder::devicetree][m [32mfound interrupt controller[m
+[m[37m[  0.279259 [92mINFO [m [37m0 0:0 zcore_drivers::builder::devicetree][m [32mfound PLIC[m
+[m[37m[  0.282130 [93mWARN [m [37m0 0:0 zcore_drivers::builder::devicetree][m [33mdevice-tree: parsing node "clint@2000000" with compatible ["sifive,clint0", "riscv,clint0"][m
+[m[37m[  0.285016 [92mINFO [m [37m0 0:0 zcore_drivers::builder::devicetree][m [32mdevice-tree: register interrupts for IrqDevice("riscv-intc-cpu0"): IrqDevice("riscv-plic"), irq_num=9[m
+[m[37m[  0.288627 [93mWARN [m [37m0 0:0 zcore_drivers::scheme::irq][m [33mregister irq num 9[m
+[m[37m[  0.290530 [92mINFO [m [37m0 0:0 zcore_drivers::irq::riscv_intc][m [32mregister handler for SCAUSE 9![m
+[m[37m[  0.294731 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33m--------- PCI bus:device:function ---------[m
+[m[37m[  0.298376 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mvendor_id 0x1b36  device_id 0x8[m
+[m[37m[  0.300926 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mNoResources, failed to initialize PCI device: 1b36:0008[m
+[m[37m[  0.303492 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mvendor_id 0x1b36  device_id 0x10[m
+[m[37m[  0.305555 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mBAR0 set from 0x4 to 0x40000004[m
+[m[37m[  0.307369 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mcap_ptr: 0x40[m
+[m[37m[  0.308898 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mPCI device has cap id 17 at 0x40[m
+[m[37m[  0.310646 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mPCI device has cap id 16 at 0x80[m
+[m[37m[  0.312226 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mPCI device has cap id 1 at 0x60[m
+[m[37m[  0.314696 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mMSI not found, using PCI interrupt[m
+[m[37m[  0.316641 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mpci device enable done[m
+[m[37m[  0.319594 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme aqa 0x1f001f aqa_address 0xffffffff7fe00024[m
+[m[37m[  0.322163 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme asq_address 0xffffffff7fe00028 sq_dma_pa 0x853ac000[m
+[m[37m[  0.324358 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme acq_address 0xffffffff7fe00030 cq_dma_pa 0x853ae000[m
+[m[37m[  0.326424 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme dev_status 0x1[m
+[m[37m[  0.328325 [93mWARN [m [37m0 0:0 zcore_drivers::nvme::interface][m [33madmin_q_db 0xffffffff7fe01000[m
+[m[37m[  0.330306 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme cq :NvmeCompletion {
+    result: 0x0,
+    sq_head: 0x1,
+    sq_id: 0x0,
+    command_id: 0x1018,
+    status: 0x1,
+}[m
+[m[37m[  0.334799 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme cq :NvmeCompletion {
+    result: 0x0,
+    sq_head: 0x3,
+    sq_id: 0x0,
+    command_id: 0x101a,
+    status: 0x821f,
+}[m
+[m[37m[  0.338201 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme cq :NvmeCompletion {
+    result: 0x0,
+    sq_head: 0x4,
+    sq_id: 0x0,
+    command_id: 0x101b,
+    status: 0x1,
+}[m
+[m[37m[  0.341569 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme cq :NvmeCompletion {
+    result: 0x0,
+    sq_head: 0x5,
+    sq_id: 0x0,
+    command_id: 0x2018,
+    status: 0x1,
+}[m
+[m[37m[  0.344165 [93mWARN [m [37m0 0:0 zcore_drivers::nvme::interface][m [33mnew nvme dev init done[m
+[m[37m[  0.345694 [92mINFO [m [37m0 0:0 zcore_drivers::bus::pci][m [32mNVMe device initialized[m
+[m[37m[  0.412514 [93mWARN [m [37m0 0:0 zcore_drivers::bus::pci][m [33mdev list: [BlockDevice("real_nvme")][m
+[m[37m[  0.415556 [93mWARN [m [37m0 0:0 kernel_hal::imp::arch::drivers][m [33madd device: BlockDevice("real_nvme")[m
+[m[37m[  0.417767 [92mINFO [m [37m0 0:0 zcore_drivers::irq::riscv_intc][m [32mregister handler for SCAUSE 1![m
+[m[37m[  0.419462 [92mINFO [m [37m0 0:0 zcore_drivers::irq::riscv_intc][m [32mregister handler for SCAUSE 5![m
+[m[37m[  0.421711 [92mINFO [m [37m0 0:0 zcore_drivers::irq::riscv_plic][m [32mplic register_handler: 33[m
+[m[37m[  0.423468 [92mINFO [m [37m0 0:0 zcore_drivers::utils::irq_manager][m [32mIRQ register handler 33[m
+[m[37m[  0.426047 [92mINFO [m [37m0 0:0 zcore_drivers::irq::riscv_plic][m [32menable_write: 0x2, disable_write: 0x0[m
+[m[37m[  0.428082 [92mINFO [m [37m0 0:0 zcore_drivers::irq::riscv_intc][m [32mregister handler for SCAUSE 5![m
+[m[37m[  0.429981 [93mWARN [m [37m0 0:0 zcore][m [33mtest nvme rw[m
+[m[37m[  0.431703 [93mWARN [m [37m0 0:0 zcore][m [33mbefore read_buf: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0][m
+[m[37m[  0.455325 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32m-----------read data----------[m
+[m[37m[  0.457714 [92mINFO [m [37m0 0:0 zcore_drivers::nvme::interface][m [32mnvme cq :NvmeCompletion {
+    result: 0x0,
+    sq_head: 0x7,
+    sq_id: 0x1,
+    command_id: 0x65,
+    status: 0x1,
+}[m
+[m[37m[  0.460891 [93mWARN [m [37m0 0:0 zcore][m [33mafter read_buf: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1][m
+[m[37m[  0.484079 [93mWARN [m [37m0 0:0 zcore][m [33mKernel loop![m
+[mQEMU: Terminated
+

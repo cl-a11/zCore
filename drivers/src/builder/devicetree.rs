@@ -90,9 +90,9 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
                     c if c.contains("allwinner,sunxi-gmac") => {
                         self.parse_ethernet(node, comp, props)
                     }
-                    // c if c.contains("ns16550a") || c.contains("allwinner,sun20i-uart") => {
-                    //     self.parse_uart(node, comp, props)
-                    // }
+                    c if c.contains("ns16550a") || c.contains("allwinner,sun20i-uart") => {
+                        self.parse_uart(node, comp, props)
+                    }
                     // c if c.contains("riscv,plic0") => {
                     //     self.parse_plic(node, comp, props)
                     // }

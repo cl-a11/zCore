@@ -62,28 +62,48 @@ pub struct Plic {
 impl PlicUnlocked {
     /// Toggle irq enable on the current hart.
     fn toggle(&mut self, irq_num: usize, enable: bool) {
-        debug_assert!(IRQ_RANGE.contains(&irq_num));
+        let mut irq = irq_num;
+        if irq_num == 33 {
+            irq = 0x1;
+        }else {
+            irq = irq_num / 32;
+        }
+        debug_assert!(IRQ_RANGE.contains(&irq));
         let hart_id = cpu_id() as usize;
-        let size = core::mem::size_of::<u32>();
         let mmio = self
             .enable_base
-            .add(irq_num / 32 * (size));
+            .add(PLIC_ENABLE_HART_OFFSET * hart_id + irq);
 
-        // 1 << (hwirq % 32)    
-        let mask = 1 << (irq_num % 32);
-
-        let enable_write = mmio.read() | mask;
-        let disable_write = mmio.read() & !mask;
-        info!("enable_write: {:#x}, disable_write: {:#x}", enable_write, disable_write);
+        let mask = 1 << (irq % 32);
         if enable {
-            mmio.write(enable_write);
+            mmio.write(mmio.read() | mask);
         } else {
-            mmio.write(disable_write);
+            mmio.write(mmio.read() & !mask);
         }
+
+        // debug_assert!(IRQ_RANGE.contains(&irq_num));
+        // let hart_id = cpu_id() as usize;
+        // let size = core::mem::size_of::<u32>();
+        // let mmio = self
+        //     .enable_base
+        //     .add(irq_num / 32 * (size));
+
+        // // 1 << (hwirq % 32)    
+        // let mask = 1 << (irq_num % 32);
+
+        // let enable_write = mmio.read() | mask;
+        // let disable_write = mmio.read() & !mask;
+        // info!("enable_write: {:#x}, disable_write: {:#x}", enable_write, disable_write);
+        // if enable {
+        //     mmio.write(enable_write);
+        // } else {
+        //     mmio.write(disable_write);
+        // }
     }
 
     /// Ask the PLIC what type of interrupt is occurred on the current hart.
     fn pending_irq(&mut self) -> Option<usize> {
+        
         let hart_id = cpu_id() as usize;
         let irq_num = self.context_base.add(PLIC_CONTEXT_CLAIM_HART_OFFSET * hart_id + PLIC_CONTEXT_CLAIM).read() as usize;
         if irq_num == 0 {
@@ -142,13 +162,13 @@ impl Scheme for Plic {
     }
 
     fn handle_irq(&self, _unused: usize) {
-        // info!("plic handle_irq {}", _unused);
         let mut inner = self.inner.lock();
+        inner.eoi(_unused);
         while let Some(irq_num) = inner.pending_irq() {
             if inner.manager.handle(irq_num).is_err() {
                 warn!("no registered handler for IRQ {}!", irq_num);
             }
-            info!("riscv plic handle irq: {}", irq_num);
+            error!("riscv plic handle irq: {}", irq_num);
             inner.eoi(irq_num);
         }
     }
@@ -171,6 +191,7 @@ impl IrqScheme for Plic {
     fn unmask(&self, irq_num: usize) -> DeviceResult {
         if self.is_valid_irq(irq_num) {
             self.inner.lock().toggle(irq_num, true);
+            self.inner.lock().set_priority(irq_num, 7);
             Ok(())
         } else {
             Err(DeviceError::InvalidParam)
@@ -178,7 +199,7 @@ impl IrqScheme for Plic {
     }
 
     fn register_handler(&self, irq_num: usize, handler: IrqHandler) -> DeviceResult {
-        info!("plic register_handler: {}", irq_num);
+        error!("plic register_handler: {}", irq_num);
         let mut inner = self.inner.lock();
         inner.manager.register_handler(irq_num, handler).map(|_| {
             inner.set_priority(irq_num, 7);

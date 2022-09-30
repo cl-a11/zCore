@@ -50,26 +50,21 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     let irq_num = 0x21;
     irq.register_handler(irq_num, Box::new(move || nvme1.handle_irq(irq_num)));
     irq.unmask(irq_num);
+
+    // for i in 0..40{
+    //     irq.unmask(i);
+    // }
     
 
-    let intc = kernel_hal::drivers::all_irq().find("riscv-intc-cpu0").unwrap();
+    // let intc = kernel_hal::drivers::all_irq().find("riscv-intc-cpu0").unwrap();
 
-    intc.register_handler(5, Box::new(move || irq.handle_irq(5)));
-    intc.unmask(5);
-
-    warn!("test nvme rw");
-    let nvme2 = kernel_hal::drivers::all_block()
-    .find("real_nvme")
-    .unwrap();
-    
-    let write_buf:&[u8] = &[1u8;512];
-
-    nvme2.write_block(1, &write_buf);
+    // intc.register_handler(9, Box::new(move || irq.handle_irq(9)));
+    // intc.unmask(9);
 
 
-    // info!("plic handle irq");
 
 
+    // info!("enable interrupts");
     unsafe{
         use core::arch::asm;
         use riscv::register::sstatus;
@@ -79,32 +74,39 @@ fn primary_main(config: kernel_hal::KernelConfig) {
             sie::set_stimer();
             sie::set_sext();
             sstatus::set_sie();
+            // kernel_hal::timer::timer_enable();
         }
     }
+
+    // warn!("test nvme rw");
+    let nvme2 = kernel_hal::drivers::all_block()
+    .find("real_nvme")
+    .unwrap();
+    
+    let write_buf:&[u8] = &[1u8;512];
+
+    nvme2.write_block(1, &write_buf);
+
+
 
     // use kernel_hal::console::console_write_early;
 
     // console_write_early("11111");
 
     // loop {
-    //     kernel_hal::interrupt::wait_for_interrupt();
-    //     irq.handle_irq(irq_num);
-    //     unsafe{
-    //         core::arch::asm!("ebreak");
-    //     }
-
-    //     nvme2.write_block(2, &write_buf);
+    // irq.handle_irq(irq_num);
+    // nvme2.write_block(2, &write_buf);
     // }
 
     let mut read_buf = [0u8; 512];
 
-    warn!("before read_buf: {:?}", read_buf);
+    error!("before read_buf: {:?}", read_buf);
 
     nvme2.read_block(1, &mut read_buf);
 
-    warn!("after read_buf: {:?}", read_buf);
+    error!("after read_buf: {:?}", read_buf);
     
-    warn!("Kernel loop!");
+    // warn!("Kernel loop!");
 
     loop{
 

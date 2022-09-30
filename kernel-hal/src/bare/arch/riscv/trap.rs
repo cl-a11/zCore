@@ -41,7 +41,7 @@ pub extern "C" fn trap_handler(tf: &mut TrapFrame) {
 
 
 
-    info!("kernel trap happened: {:?}", TrapReason::from(scause));
+    error!("kernel trap happened: {:?}", TrapReason::from(scause));
     info!(
         "sepc = 0x{:x} pgtoken = 0x{:x}",
         tf.sepc,
